@@ -30,6 +30,7 @@ export default function ProblemScreen() {
                 icon={<Flame size={20} />}
                 label="Current Streak"
                 value="18 Days"
+                
               />
 
               <StatCard
