@@ -1,12 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Clock3,
-  Bookmark,
-  CheckCircle2,
-  ChevronRight,
-} from "lucide-react";
+import { Clock3, Bookmark, CheckCircle2, ChevronRight } from "lucide-react";
 
 export default function QuestionCard({
   title = "Maximum Subarray Sum",
@@ -45,17 +40,10 @@ export default function QuestionCard({
             {difficulty}
           </div>
 
-          <div className="text-xs text-neutral-400">
-            {subject}
-          </div>
+          <div className="text-xs text-neutral-400">{subject}</div>
         </div>
 
-        {bookmarked && (
-          <Bookmark
-            size={17}
-            className="fill-black text-black"
-          />
-        )}
+        {bookmarked && <Bookmark size={17} className="fill-black text-black" />}
       </div>
 
       {/* Title */}
@@ -64,9 +52,7 @@ export default function QuestionCard({
       </h2>
 
       {/* Chapter */}
-      <p className="mt-2 text-sm text-neutral-500">
-        {chapter}
-      </p>
+      <p className="mt-2 text-sm text-neutral-500">{chapter}</p>
 
       {/* Stats */}
       <div className="mt-6 flex flex-wrap items-center gap-5 text-sm text-neutral-500">
@@ -75,13 +61,9 @@ export default function QuestionCard({
           {time}
         </div>
 
-        <div className="font-semibold text-neutral-900">
-          +{xp} XP
-        </div>
+        <div className="font-semibold text-neutral-900">+{xp} XP</div>
 
-        <div>
-          {questions} attempts
-        </div>
+        <div>{questions} attempts</div>
       </div>
 
       {/* Footer */}
@@ -92,9 +74,7 @@ export default function QuestionCard({
             Solved
           </div>
         ) : (
-          <div className="text-sm text-neutral-400">
-            Start Challenge
-          </div>
+          <div className="text-sm text-neutral-400">Start Challenge</div>
         )}
 
         <ChevronRight
