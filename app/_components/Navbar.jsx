@@ -1,86 +1,213 @@
 "use client";
 
-import { useState } from "react";
-import { Menu, X, Circle } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Menu, Brain, ArrowRight, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+} from "@/components/ui/navigation-menu";
 
-export default function Navbar() {
-  const [open, setOpen] = useState(false);
+const links = [
+  { name: "Problems", href: "/problems" },
+  { name: "Leaderboard", href: "/leaderboard" },
+  { name: "Mock Tests", href: "/mock-tests" },
+  { name: "Blog", href: "/blog" },
+];
 
-  const links = [
-    { name: "Work", href: "#" },
-    { name: "About", href: "#" },
-    { name: "Playground", href: "#" },
-    { name: "Resources", href: "#" },
-  ];
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return <div className="w-9 h-9" />;
+
+  function toggle(e) {
+    const newTheme = theme === "dark" ? "light" : "dark";
+
+    if (!document.startViewTransition) {
+      setTheme(newTheme);
+      return;
+    }
+
+    const x = e.clientX;
+    const y = e.clientY;
+    const maxR = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y),
+    );
+
+    const transition = document.startViewTransition(() => setTheme(newTheme));
+
+    transition.ready.then(() => {
+      document.documentElement.animate(
+        {
+          clipPath: [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${maxR}px at ${x}px ${y}px)`,
+          ],
+        },
+        {
+          duration: 450,
+          easing: "ease-in-out",
+          pseudoElement: "::view-transition-new(root)",
+        },
+      );
+    });
+  }
 
   return (
-    <>
-      <nav className="fixed top-6 left-1/2 z-50 w-[95%] max-w-6xl -translate-x-1/2">
-        <div className="flex items-center justify-between rounded-full border border-neutral-700 bg-neutral-950/90 px-3 py-3 shadow-[0_15px_45px_rgba(0,0,0,0.25)] backdrop-blur-xl">
-          {/* Logo */}
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-black">
-            <Circle className="h-6 w-6 fill-black" />
-          </div>
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggle}
+      aria-label="Toggle theme"
+    >
+      {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+    </Button>
+  );
+}
 
-          {/* Desktop Nav */}
-          <div className="hidden items-center gap-12 text-[17px] font-medium text-white md:flex">
-            {links.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                className="relative transition hover:text-neutral-300 after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-0 after:bg-white after:transition-all hover:after:w-full"
-              >
-                {link.name}
-              </a>
-            ))}
-          </div>
+export default function Navbar() {
+  const pathname = usePathname();
 
-          {/* Email Button */}
-          <a
-            href="mailto:ihyaet@gmail.com"
-            className="hidden rounded-full bg-white px-7 py-3 text-base font-medium text-black transition hover:scale-105 md:block"
-          >
-            ihyaet@gmail.com
-          </a>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setOpen(!open)}
-            className="rounded-full bg-white p-3 text-black md:hidden"
-          >
-            {open ? <X size={22} /> : <Menu size={22} />}
-          </button>
-        </div>
-
-        {/* Mobile Menu */}
-        <div
-          className={`overflow-hidden transition-all duration-300 md:hidden ${
-            open ? "mt-3 max-h-96 opacity-100" : "max-h-0 opacity-0"
-          }`}
+  return (
+    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        {/* Logo */}
+        <Link
+          href="/"
+          className="flex items-center gap-2.5 font-bold text-foreground hover:opacity-80 transition-opacity shrink-0"
         >
-          <div className="rounded-3xl border border-neutral-800 bg-neutral-950/95 p-5 backdrop-blur-xl">
-            <div className="flex flex-col gap-4">
-              {links.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  className="rounded-xl px-4 py-3 text-lg text-white transition hover:bg-neutral-800"
-                >
-                  {link.name}
-                </a>
-              ))}
-            </div>
-
-            <a
-              href="mailto:ihyaet@gmail.com"
-              className="mt-6 flex justify-center rounded-full bg-white py-3 font-medium text-black"
-            >
-              ihyaet@gmail.com
-            </a>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Brain size={16} />
           </div>
+          <span className="text-base tracking-tight">Cod&#233;dex</span>
+          <Badge
+            variant="secondary"
+            className="text-[10px] px-1.5 py-0 h-4 font-semibold hidden sm:inline-flex"
+          >
+            BETA
+          </Badge>
+        </Link>
+
+        {/* Desktop nav */}
+        <NavigationMenu className="hidden md:flex">
+          <NavigationMenuList className="gap-1">
+            {links.map((link) => (
+              <NavigationMenuItem key={link.name}>
+                <NavigationMenuLink asChild>
+                  <Link
+                    href={link.href}
+                    className={cn(
+                      "rounded-lg px-3.5 py-2 text-sm font-medium transition-colors",
+                      pathname === link.href
+                        ? "bg-accent text-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    )}
+                  >
+                    {link.name}
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+            ))}
+          </NavigationMenuList>
+        </NavigationMenu>
+
+        {/* Desktop right */}
+        <div className="hidden md:flex items-center gap-1">
+          <ThemeToggle />
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/login">Log in</Link>
+          </Button>
+          <Button size="sm" className="gap-1.5" asChild>
+            <Link href="/signup">
+              Get Started
+              <ArrowRight size={14} />
+            </Link>
+          </Button>
         </div>
-      </nav>
-    </>
+
+        {/* Mobile right */}
+        <div className="flex items-center gap-1 md:hidden">
+          <ThemeToggle />
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </SheetTrigger>
+
+            <SheetContent
+              side="right"
+              className="w-72 sm:w-80 flex flex-col p-0"
+            >
+              <SheetHeader className="px-6 pt-6 pb-4">
+                <SheetTitle asChild>
+                  <Link
+                    href="/"
+                    className="flex items-center gap-2.5 font-bold text-foreground w-fit"
+                  >
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                      <Brain size={16} />
+                    </div>
+                    Cod&#233;dex
+                  </Link>
+                </SheetTitle>
+              </SheetHeader>
+
+              <Separator />
+
+              <nav className="flex flex-col gap-1 px-3 py-4 flex-1">
+                {links.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className={cn(
+                      "rounded-lg px-4 py-2.5 text-sm font-medium transition-colors",
+                      pathname === link.href
+                        ? "bg-accent text-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    )}
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+              </nav>
+
+              <Separator />
+
+              <div className="flex flex-col gap-2 px-4 py-4">
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href="/login">Log in</Link>
+                </Button>
+                <Button className="w-full gap-1.5" asChild>
+                  <Link href="/signup">
+                    Get Started
+                    <ArrowRight size={14} />
+                  </Link>
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+    </header>
   );
 }

@@ -1,7 +1,11 @@
-import React, { useState } from "react";
+"use client";
 
+import { useState } from "react";
 import { Flame } from "lucide-react";
-
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { navItems } from "@/app/_utils/items";
 
 export function Sidebar({ streakDays = 12 }) {
@@ -10,65 +14,82 @@ export function Sidebar({ streakDays = 12 }) {
   const filledDots = 6;
 
   return (
-    <aside className="hidden lg:flex flex-col w-52 xl:w-56 shrink-0 bg-white border-r border-neutral-200 min-h-screen">
+    <aside className="hidden lg:flex flex-col w-52 xl:w-56 shrink-0 bg-card border-r border-border min-h-screen">
       <nav className="flex-1 py-4">
         <ul className="space-y-0.5 px-2">
           {navItems.map(({ icon: Icon, label }) => (
             <li key={label}>
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setActive(label)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={cn(
+                  "w-full justify-start gap-3 px-3 py-2.5 h-auto text-sm font-medium",
                   active === label
-                    ? "bg-black text-white"
-                    : "text-neutral-600 hover:bg-neutral-100"
-                }`}
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                )}
               >
                 <Icon size={16} />
                 {label}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
       </nav>
 
       {/* Daily Streak card */}
-      <div className="m-3 p-4 border border-neutral-200 rounded-xl">
-        <div className="flex items-center gap-2 mb-3">
-          <Flame size={16} className="text-orange-500" />
-          <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-            Daily Streak
-          </span>
-        </div>
-        <div className="flex items-baseline gap-1.5 mb-3">
-          <span className="text-4xl font-bold">{streakDays}</span>
-          <span className="text-sm text-neutral-500 font-medium">Days</span>
-        </div>
-        <div className="flex gap-1.5 mb-1">
-          {weekDots.map((d, i) => (
-            <div
-              key={i}
-              className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold ${
-                i < filledDots
-                  ? "bg-black text-white"
-                  : "border border-neutral-300 text-neutral-400"
-              }`}
-            />
-          ))}
-        </div>
-        <div className="flex gap-1.5 mb-3">
-          {weekDots.map((d, i) => (
-            <span
-              key={i}
-              className="w-5 text-center text-[9px] text-neutral-400"
-            >
-              {d}
+      <Card className="m-3 shadow-none border-border rounded-xl">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Flame size={16} className="text-orange-500" />
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Daily Streak
             </span>
-          ))}
-        </div>
-        <button className="w-full border border-neutral-200 rounded-lg py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition">
-          View Streak
-        </button>
-      </div>
+          </div>
+
+          <div className="flex items-baseline gap-1.5 mb-3">
+            <span className="text-4xl font-bold text-foreground">
+              {streakDays}
+            </span>
+            <span className="text-sm text-muted-foreground font-medium">
+              Days
+            </span>
+          </div>
+
+          <div className="flex gap-1.5 mb-1">
+            {weekDots.map((d, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold",
+                  i < filledDots
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-border text-muted-foreground",
+                )}
+              />
+            ))}
+          </div>
+
+          <div className="flex gap-1.5 mb-3">
+            {weekDots.map((d, i) => (
+              <span
+                key={i}
+                className="w-5 text-center text-[9px] text-muted-foreground"
+              >
+                {d}
+              </span>
+            ))}
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full rounded-lg text-xs h-7"
+          >
+            View Streak
+          </Button>
+        </CardContent>
+      </Card>
     </aside>
   );
 }

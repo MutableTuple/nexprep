@@ -1,42 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   Code2,
   CheckCircle2,
   Clock,
   Trophy,
-  LayoutDashboard,
-  ListChecks,
-  Swords,
-  MessageSquare,
-  BookOpen,
-  ClipboardList,
-  Send,
-  Bookmark,
-  BarChart2,
-  Settings,
-  Flame,
-  ChevronDown,
   CalendarDays,
-  Circle,
-  CheckCircle,
+  ChevronDown,
   ExternalLink,
-  Zap,
-  Star,
 } from "lucide-react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
-
+import { PieChart, Pie, Cell } from "recharts";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import {
   navItems,
   progressData,
@@ -49,358 +29,459 @@ import {
 import Topbar from "./Topbar";
 import { Sidebar } from "./Analytics/AnalyticsSidebar";
 import { ProgressChart } from "./Analytics/ProgressChart";
-// ─── DATA ────────────────────────────────────────────────────────────────────
 
-// Build heatmap: 5 rows (Mon–Fri) × 13 cols
-const heatmap = Array.from({ length: 5 }, (_, row) =>
-  Array.from({ length: 13 }, (_, col) => {
+// ─── Heatmap data ─────────────────────────────────────────────────────────────
+
+const heatmap = Array.from({ length: 5 }, () =>
+  Array.from({ length: 13 }, () => {
     const v = Math.random();
     return v > 0.7 ? 3 : v > 0.45 ? 2 : v > 0.25 ? 1 : 0;
   }),
 );
 
-const heatColors = ["#e5e5e5", "#bbb", "#777", "#111"];
-const dayLabels = ["M", "T", "W", "T", "F", "S", "S"];
+const HEAT_COLORS = [
+  "bg-border",
+  "bg-muted-foreground/40",
+  "bg-muted-foreground/70",
+  "bg-foreground",
+];
 
-// ─── SUB-COMPONENTS ──────────────────────────────────────────────────────────
+const COL_LABELS = [
+  "M",
+  "T",
+  "W",
+  "T",
+  "F",
+  "S",
+  "S",
+  "M",
+  "T",
+  "W",
+  "T",
+  "F",
+  "S",
+];
+
+// ─── GlassCard ────────────────────────────────────────────────────────────────
+
+function GlassCard({ className, children, ...props }) {
+  return (
+    <Card
+      className={cn("bg-card border-border shadow-none rounded-xl", className)}
+      {...props}
+    >
+      {children}
+    </Card>
+  );
+}
+
+// ─── KpiCard ──────────────────────────────────────────────────────────────────
 
 export function KpiCard({ icon: Icon, label, value, delta }) {
   return (
-    <div className="flex items-center gap-4 bg-white border border-neutral-200 rounded-xl p-5">
-      <div className="w-11 h-11 rounded-full bg-black flex items-center justify-center shrink-0">
-        <Icon size={18} className="text-white" />
-      </div>
-      <div>
-        <p className="text-xs text-neutral-500 font-medium mb-0.5">{label}</p>
-        <p className="text-2xl font-bold leading-none">{value}</p>
-        <p className="text-xs text-green-600 mt-1">↑ {delta}</p>
-      </div>
-    </div>
+    <GlassCard>
+      <CardContent className="flex items-center gap-4 p-5">
+        <div className="w-11 h-11 rounded-full bg-primary flex items-center justify-center shrink-0">
+          <Icon size={18} className="text-primary-foreground" />
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground font-medium mb-0.5">
+            {label}
+          </p>
+          <p className="text-2xl font-bold leading-none text-foreground">
+            {value}
+          </p>
+          <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+            ↑ {delta}
+          </p>
+        </div>
+      </CardContent>
+    </GlassCard>
   );
 }
+
+// ─── BreakdownChart ───────────────────────────────────────────────────────────
 
 export function BreakdownChart() {
   return (
-    <div className="rounded-xl border border-neutral-200 bg-white p-5">
-      <h2 className="mb-5 text-sm font-semibold">Problem Breakdown</h2>
+    <GlassCard>
+      <CardHeader className="pb-2 px-5 pt-5">
+        <CardTitle className="text-sm font-semibold">
+          Problem Breakdown
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-5 pb-5">
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative h-[140px] w-[140px]">
+            <PieChart width={140} height={140}>
+              <Pie
+                data={breakdownData}
+                cx={70}
+                cy={70}
+                innerRadius={48}
+                outerRadius={64}
+                dataKey="value"
+                startAngle={90}
+                endAngle={-270}
+                stroke="none"
+              >
+                {breakdownData.map((entry, i) => (
+                  <Cell key={i} fill={entry.color} />
+                ))}
+              </Pie>
+            </PieChart>
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span className="text-xl font-bold text-foreground">84.7%</span>
+              <span className="text-xs text-muted-foreground">Acceptance</span>
+            </div>
+          </div>
 
-      <div className="flex flex-col items-center gap-6">
-        {/* Chart */}
-
-        <div className="relative flex flex-col text-center h-[140px] w-[140px] items-center justify-center">
-          <PieChart width={140} height={140}>
-            <Pie
-              data={breakdownData}
-              cx={70}
-              cy={70}
-              innerRadius={48}
-              outerRadius={64}
-              dataKey="value"
-              startAngle={90}
-              endAngle={-270}
-              stroke="none"
-            >
-              {breakdownData.map((entry, index) => (
-                <Cell key={index} fill={entry.color} />
-              ))}
-            </Pie>
-          </PieChart>
-
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className="text-xl font-bold text-center">84.7%</span>
-
-            <span className="text-xs text-neutral-400 text-center">
-              Acceptance
-            </span>
+          <div className="w-full space-y-3">
+            {breakdownData.map((item) => (
+              <div
+                key={item.name}
+                className="flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <span
+                    className="h-3 w-3 rounded-full shrink-0"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    {item.name}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-foreground">
+                    {item.value.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{item.pct}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-
-        {/* Legend */}
-
-        <div className="w-full space-y-3">
-          {breakdownData.map((item) => (
-            <div key={item.name} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span
-                  className="h-3 w-3 rounded-full"
-                  style={{
-                    backgroundColor: item.color,
-                  }}
-                />
-
-                <span className="text-sm text-neutral-600">{item.name}</span>
-              </div>
-
-              <div className="text-right">
-                <p className="text-sm font-semibold">
-                  {item.value.toLocaleString()}
-                </p>
-
-                <p className="text-xs text-neutral-400">{item.pct}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </GlassCard>
   );
 }
+
+// ─── RecentActivity ───────────────────────────────────────────────────────────
+
+const DIFF_COLORS = {
+  Easy: "text-green-600 dark:text-green-400",
+  Medium: "text-yellow-600 dark:text-yellow-400",
+  Hard: "text-red-500 dark:text-red-400",
+};
+
 export function RecentActivity() {
   return (
-    <div className="bg-white border border-neutral-200 rounded-xl p-5">
-      <h2 className="font-semibold text-sm mb-4">Recent Activity</h2>
-      <ul className="space-y-4">
-        {recentActivity.map((item, i) => (
-          <li key={i} className="flex items-start gap-3">
-            <div
-              className={`mt-0.5 w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${item.done ? "bg-black border-black" : "border-neutral-300"}`}
-            >
-              {item.done && <CheckCircle2 size={11} className="text-white" />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium leading-snug truncate">
-                {item.title}
-              </p>
-              <p className="text-[10px] text-neutral-400 mt-0.5">
-                <span
-                  className={`font-medium ${item.tag === "Easy" ? "text-green-600" : item.tag === "Medium" ? "text-yellow-600" : "text-red-500"}`}
-                >
-                  {item.tag}
-                </span>
-                {" · "}
-                {item.ago}
-              </p>
-            </div>
-            <span className="text-[10px] font-bold text-neutral-700 shrink-0">
-              {item.xp}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <GlassCard>
+      <CardHeader className="pb-2 px-5 pt-5">
+        <CardTitle className="text-sm font-semibold">Recent Activity</CardTitle>
+      </CardHeader>
+      <CardContent className="px-5 pb-5">
+        <ul className="space-y-4">
+          {recentActivity.map((item, i) => (
+            <li key={i} className="flex items-start gap-3">
+              <div
+                className={cn(
+                  "mt-0.5 w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center",
+                  item.done ? "bg-primary border-primary" : "border-border",
+                )}
+              >
+                {item.done && (
+                  <CheckCircle2 size={11} className="text-primary-foreground" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium leading-snug truncate text-foreground">
+                  {item.title}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  <span className={cn("font-medium", DIFF_COLORS[item.tag])}>
+                    {item.tag}
+                  </span>
+                  {" · "}
+                  {item.ago}
+                </p>
+              </div>
+              <span className="text-[10px] font-bold text-foreground shrink-0">
+                {item.xp}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </GlassCard>
   );
 }
+
+// ─── TopicMastery ─────────────────────────────────────────────────────────────
 
 export function TopicMastery() {
   return (
-    <div className="bg-white border border-neutral-200 rounded-xl p-5">
-      <h2 className="font-semibold text-sm mb-4">Topic Mastery</h2>
-      <ul className="space-y-3">
-        {topics.map((t) => (
-          <li key={t.name} className="flex items-center gap-3">
-            <span className="text-xs text-neutral-600 w-36 shrink-0">
-              {t.name}
-            </span>
-            <div className="flex-1 h-2 bg-neutral-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-black rounded-full"
-                style={{ width: `${t.pct}%` }}
-              />
-            </div>
-            <span className="text-xs font-semibold w-8 text-right">
-              {t.pct}%
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <GlassCard>
+      <CardHeader className="pb-2 px-5 pt-5">
+        <CardTitle className="text-sm font-semibold">Topic Mastery</CardTitle>
+      </CardHeader>
+      <CardContent className="px-5 pb-5">
+        <ul className="space-y-3">
+          {topics.map((t) => (
+            <li key={t.name} className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground w-36 shrink-0">
+                {t.name}
+              </span>
+              <Progress value={t.pct} className="flex-1 h-2" />
+              <span className="text-xs font-semibold w-8 text-right text-foreground">
+                {t.pct}%
+              </span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </GlassCard>
   );
 }
+
+// ─── WeeklyHeatmap ────────────────────────────────────────────────────────────
 
 export function WeeklyHeatmap() {
-  const cols = 13;
-  // Build col labels (dates)
-  const colLabels = [
-    "M",
-    "T",
-    "W",
-    "T",
-    "F",
-    "S",
-    "S",
-    "M",
-    "T",
-    "W",
-    "T",
-    "F",
-    "S",
-  ];
-
   return (
-    <div className="bg-white border border-neutral-200 rounded-xl p-5">
-      <h2 className="font-semibold text-sm mb-4">Weekly Activity</h2>
-      <div className="overflow-x-auto">
-        <div className="flex gap-1 mb-1 ml-8">
-          {colLabels.map((d, i) => (
-            <span
-              key={i}
-              className="w-4 text-center text-[9px] text-neutral-400"
-            >
-              {d}
-            </span>
-          ))}
-        </div>
-        <div className="space-y-1">
-          {["Mon", "Tue", "Wed", "Thu", "Fri"].map((day, row) => (
-            <div key={day} className="flex items-center gap-1">
-              <span className="text-[9px] text-neutral-400 w-7 shrink-0">
-                {day}
+    <GlassCard>
+      <CardHeader className="pb-2 px-5 pt-5">
+        <CardTitle className="text-sm font-semibold">Weekly Activity</CardTitle>
+      </CardHeader>
+      <CardContent className="px-5 pb-5">
+        <div className="overflow-x-auto">
+          <div className="flex gap-1 mb-1 ml-8">
+            {COL_LABELS.map((d, i) => (
+              <span
+                key={i}
+                className="w-4 text-center text-[9px] text-muted-foreground"
+              >
+                {d}
               </span>
-              {Array.from({ length: cols }, (_, col) => {
-                const level = heatmap[row]?.[col] ?? 0;
-                return (
-                  <div
-                    key={col}
-                    className="w-4 h-4 rounded-sm shrink-0"
-                    style={{ background: heatColors[level] }}
-                    title={`${level} submissions`}
-                  />
-                );
-              })}
-            </div>
-          ))}
+            ))}
+          </div>
+          <div className="space-y-1">
+            {["Mon", "Tue", "Wed", "Thu", "Fri"].map((day, row) => (
+              <div key={day} className="flex items-center gap-1">
+                <span className="text-[9px] text-muted-foreground w-7 shrink-0">
+                  {day}
+                </span>
+                {Array.from({ length: 13 }, (_, col) => {
+                  const level = heatmap[row]?.[col] ?? 0;
+                  return (
+                    <div
+                      key={col}
+                      className={cn(
+                        "w-4 h-4 rounded-sm shrink-0",
+                        HEAT_COLORS[level],
+                      )}
+                      title={`${level} submissions`}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 mt-3 justify-end">
+            <span className="text-[9px] text-muted-foreground">Less</span>
+            {HEAT_COLORS.map((c, i) => (
+              <div key={i} className={cn("w-3 h-3 rounded-sm", c)} />
+            ))}
+            <span className="text-[9px] text-muted-foreground">More</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 mt-3 justify-end">
-          <span className="text-[9px] text-neutral-400">Less</span>
-          {heatColors.map((c, i) => (
-            <div
-              key={i}
-              className="w-3 h-3 rounded-sm"
-              style={{ background: c }}
-            />
-          ))}
-          <span className="text-[9px] text-neutral-400">More</span>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </GlassCard>
   );
 }
+
+// ─── RecentSubmissions ────────────────────────────────────────────────────────
 
 export function RecentSubmissions() {
   return (
-    <div className="bg-white border border-neutral-200 rounded-xl p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-sm">Recent Submissions</h2>
-        <button className="text-xs font-medium text-neutral-500 border border-neutral-200 px-3 py-1 rounded-lg hover:bg-neutral-50 transition">
+    <GlassCard>
+      <CardHeader className="px-5 pt-5 pb-3 flex-row items-center justify-between space-y-0">
+        <CardTitle className="text-sm font-semibold">
+          Recent Submissions
+        </CardTitle>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs rounded-lg h-7 px-3"
+        >
           View All
-        </button>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-neutral-100">
-              {["Problem", "Status", "Language", "Time", "Submitted"].map(
-                (h) => (
-                  <th
-                    key={h}
-                    className="text-left pb-2 font-semibold text-neutral-400 pr-4 whitespace-nowrap"
-                  >
-                    {h}
-                  </th>
-                ),
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {submissions.map((s, i) => (
-              <tr key={i} className="border-b border-neutral-50 last:border-0">
-                <td className="py-2.5 pr-4 font-medium whitespace-nowrap">
-                  {s.problem}
-                </td>
-                <td className="py-2.5 pr-4 whitespace-nowrap">
-                  <span
-                    className={`flex items-center gap-1.5 ${s.status === "Accepted" ? "text-green-600" : "text-red-500"}`}
-                  >
-                    <span
-                      className={`w-2 h-2 rounded-full shrink-0 ${s.status === "Accepted" ? "bg-green-500" : "bg-red-400"}`}
-                    />
-                    {s.status}
-                  </span>
-                </td>
-                <td className="py-2.5 pr-4 text-neutral-500">{s.lang}</td>
-                <td className="py-2.5 pr-4 text-neutral-500">{s.time}</td>
-                <td className="py-2.5 text-neutral-400">{s.submitted}</td>
+        </Button>
+      </CardHeader>
+      <CardContent className="px-5 pb-5">
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border">
+                {["Problem", "Status", "Language", "Time", "Submitted"].map(
+                  (h) => (
+                    <th
+                      key={h}
+                      className="text-left pb-2 font-semibold text-muted-foreground pr-4 whitespace-nowrap"
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            </thead>
+            <tbody>
+              {submissions.map((s, i) => (
+                <tr key={i} className="border-b border-border/50 last:border-0">
+                  <td className="py-2.5 pr-4 font-medium whitespace-nowrap text-foreground">
+                    {s.problem}
+                  </td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">
+                    <span
+                      className={cn(
+                        "flex items-center gap-1.5",
+                        s.status === "Accepted"
+                          ? "text-green-600 dark:text-green-400"
+                          : "text-red-500 dark:text-red-400",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "w-2 h-2 rounded-full shrink-0",
+                          s.status === "Accepted"
+                            ? "bg-green-500"
+                            : "bg-red-400",
+                        )}
+                      />
+                      {s.status}
+                    </span>
+                  </td>
+                  <td className="py-2.5 pr-4 text-muted-foreground">
+                    {s.lang}
+                  </td>
+                  <td className="py-2.5 pr-4 text-muted-foreground">
+                    {s.time}
+                  </td>
+                  <td className="py-2.5 text-muted-foreground">
+                    {s.submitted}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </GlassCard>
   );
 }
+
+// ─── Badges ───────────────────────────────────────────────────────────────────
 
 export function Badges() {
   return (
-    <div className="bg-white border border-neutral-200 rounded-xl p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-sm">Badges</h2>
-        <button className="text-xs font-medium text-neutral-500 border border-neutral-200 px-3 py-1 rounded-lg hover:bg-neutral-50 transition">
+    <GlassCard>
+      <CardHeader className="px-5 pt-5 pb-3 flex-row items-center justify-between space-y-0">
+        <CardTitle className="text-sm font-semibold">Badges</CardTitle>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs rounded-lg h-7 px-3"
+        >
           View All
-        </button>
-      </div>
-      <div className="grid grid-cols-4 gap-3">
-        {badges.map((b, i) => (
-          <div key={i} className="flex flex-col items-center gap-1.5">
-            <div className="w-14 h-14 border-[3px] border-black rounded-lg flex items-center justify-center">
-              <span className="text-lg font-bold">{b.label}</span>
+        </Button>
+      </CardHeader>
+      <CardContent className="px-5 pb-5">
+        <div className="grid grid-cols-4 gap-3">
+          {badges.map((b, i) => (
+            <div key={i} className="flex flex-col items-center gap-1.5">
+              <div className="w-14 h-14 border-[3px] border-primary rounded-lg flex items-center justify-center">
+                <span className="text-lg font-bold text-foreground">
+                  {b.label}
+                </span>
+              </div>
+              <span className="text-[9px] text-muted-foreground text-center leading-tight">
+                {b.sub}
+              </span>
             </div>
-            <span className="text-[9px] text-neutral-500 text-center leading-tight">
-              {b.sub}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
+          ))}
+        </div>
+      </CardContent>
+    </GlassCard>
   );
 }
+
+// ─── UpcomingContest ──────────────────────────────────────────────────────────
 
 export function UpcomingContest() {
   return (
-    <div className="bg-white border border-neutral-200 rounded-xl p-5">
-      <h2 className="font-semibold text-sm mb-4">Upcoming Contest</h2>
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <p className="font-bold text-base leading-snug">Weekly Contest 398</p>
-        <span className="shrink-0 text-[10px] font-semibold bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full whitespace-nowrap">
-          In 2 days
-        </span>
-      </div>
-      <div className="flex items-center gap-2 text-xs text-neutral-500 mb-4">
-        <CalendarDays size={13} />
-        <span>20 May 2025, 08:00 PM</span>
-      </div>
-      <button className="w-full border border-neutral-200 rounded-lg py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 transition flex items-center justify-center gap-1.5">
-        View Details
-        <ExternalLink size={11} />
-      </button>
-    </div>
+    <GlassCard>
+      <CardHeader className="pb-2 px-5 pt-5">
+        <CardTitle className="text-sm font-semibold">
+          Upcoming Contest
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-5 pb-5">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <p className="font-bold text-base leading-snug text-foreground">
+            Weekly Contest 398
+          </p>
+          <Badge
+            variant="secondary"
+            className="text-[10px] rounded-full whitespace-nowrap shrink-0"
+          >
+            In 2 days
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
+          <CalendarDays size={13} />
+          <span>20 May 2025, 08:00 PM</span>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full rounded-lg text-xs gap-1.5"
+        >
+          View Details
+          <ExternalLink size={11} />
+        </Button>
+      </CardContent>
+    </GlassCard>
   );
 }
 
-// ─── MAIN SCREEN ─────────────────────────────────────────────────────────────
+// ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-muted/30 flex flex-col font-sans">
       <Topbar />
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 
-        {/* Main content */}
         <main className="flex-1 overflow-y-auto p-5 lg:p-6 xl:p-8">
           {/* Page header */}
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold">Welcome back, Yogesh!</h1>
-              <p className="text-sm text-neutral-500 mt-0.5">
+              <h1 className="text-2xl font-bold text-foreground">
+                Welcome back, Yogesh!
+              </h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Keep learning, keep building.
               </p>
             </div>
-            <button className="flex items-center gap-2 border border-neutral-200 bg-white rounded-lg px-3 py-2 text-sm font-medium hover:bg-neutral-50 transition shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 rounded-lg shrink-0"
+            >
               <CalendarDays size={14} />
               This Week
               <ChevronDown size={13} />
-            </button>
+            </Button>
           </div>
 
           {/* KPI row */}
@@ -431,21 +512,21 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* Row 2: Progress + Breakdown + Recent Activity */}
+          {/* Row 2 */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_auto] xl:grid-cols-[1fr_280px_280px] gap-4 mb-4">
             <ProgressChart />
             <BreakdownChart />
             <RecentActivity />
           </div>
 
-          {/* Row 3: Topic Mastery + Weekly Activity + Upcoming Contest */}
+          {/* Row 3 */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[280px_1fr_280px] gap-4 mb-4">
             <TopicMastery />
             <WeeklyHeatmap />
             <UpcomingContest />
           </div>
 
-          {/* Row 4: Submissions + Badges */}
+          {/* Row 4 */}
           <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-4">
             <RecentSubmissions />
             <Badges />

@@ -22,6 +22,13 @@ import {
   FaYoutube,
   FaXTwitter,
 } from "react-icons/fa6";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+
+// ─── Data ─────────────────────────────────────────────────────────────────────
 
 const studyLinks = [
   { name: "Physics", href: "/physics" },
@@ -134,22 +141,33 @@ const socials = [
   { icon: FaLinkedinIn, href: "#", label: "LinkedIn" },
 ];
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+const legalLinks = [
+  { name: "Privacy", href: "/privacy-policy" },
+  { name: "Terms", href: "/terms" },
+  { name: "Contact", href: "/contact" },
+  { name: "Blog", href: "/blog" },
+  { name: "Sitemap", href: "/sitemap.xml" },
+  { name: "Robots", href: "/robots.txt" },
+];
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function FooterColumn({ title, links }) {
   return (
     <div>
-      <h3 className="mb-6 text-lg font-semibold text-white">{title}</h3>
-      <ul className="space-y-4">
+      <h3 className="mb-4 sm:mb-6 text-sm sm:text-base font-semibold text-white">
+        {title}
+      </h3>
+      <ul className="space-y-3 sm:space-y-4">
         {links.map((link) => (
           <li key={link.name}>
             <Link
               href={link.href}
-              className="group flex items-center text-sm text-zinc-400 transition hover:text-white"
+              className="group flex items-center text-xs sm:text-sm text-zinc-400 transition hover:text-white"
             >
               {link.name}
               <ChevronRight
-                size={14}
+                size={12}
                 className="ml-1 opacity-0 transition group-hover:translate-x-1 group-hover:opacity-100"
               />
             </Link>
@@ -162,13 +180,15 @@ function FooterColumn({ title, links }) {
 
 function Feature({ icon: Icon, title, desc }) {
   return (
-    <div className="flex items-start gap-4">
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-3 shrink-0">
-        <Icon size={18} aria-hidden="true" />
+    <div className="flex items-start gap-3 sm:gap-4">
+      <div className="rounded-xl border border-white/10 bg-white/5 p-2.5 sm:p-3 shrink-0">
+        <Icon size={16} aria-hidden="true" />
       </div>
       <div>
-        <h4 className="font-medium text-white">{title}</h4>
-        <p className="mt-1 text-sm leading-6 text-zinc-400">{desc}</p>
+        <h4 className="text-sm font-medium text-white">{title}</h4>
+        <p className="mt-1 text-xs sm:text-sm leading-5 sm:leading-6 text-zinc-400">
+          {desc}
+        </p>
       </div>
     </div>
   );
@@ -176,24 +196,25 @@ function Feature({ icon: Icon, title, desc }) {
 
 function TrustCard({ icon: Icon, title, desc }) {
   return (
-    <div className="flex items-center gap-5 rounded-3xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-white/20 hover:bg-white/[0.05]">
-      <div className="rounded-2xl bg-white/5 p-4 shrink-0">
-        <Icon size={22} aria-hidden="true" />
+    <div className="flex items-center gap-4 rounded-2xl sm:rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-6 transition hover:border-white/20 hover:bg-white/[0.05]">
+      <div className="rounded-xl sm:rounded-2xl bg-white/5 p-3 sm:p-4 shrink-0">
+        <Icon size={18} aria-hidden="true" />
       </div>
       <div>
-        <h4 className="font-semibold text-white">{title}</h4>
-        <p className="mt-2 text-sm leading-6 text-zinc-400">{desc}</p>
+        <h4 className="text-sm font-semibold text-white">{title}</h4>
+        <p className="mt-1 text-xs sm:text-sm leading-5 sm:leading-6 text-zinc-400">
+          {desc}
+        </p>
       </div>
     </div>
   );
 }
 
-// ── Footer ────────────────────────────────────────────────────────────────────
+// ─── Footer ───────────────────────────────────────────────────────────────────
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
-  // JSON-LD structured data for SEO
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "EducationalOrganization",
@@ -219,54 +240,53 @@ export default function Footer() {
 
   return (
     <footer
-      className="relative mt-40 border-t border-white/10 bg-[#090909] text-white"
+      className="relative mt-16 sm:mt-24 lg:mt-40 border-t border-white/10 bg-[#090909] text-white"
       aria-label="Site footer"
     >
-      {/* JSON-LD */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
 
-      {/* Background blur */}
+      {/* Subtle bg glow — no large blur on mobile */}
       <div
-        className="absolute inset-0 overflow-hidden pointer-events-none"
-        aria-hidden="true"
+        className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block"
+        aria-hidden
       >
-        <div className="absolute left-1/2 top-0 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-white/[0.03] blur-[180px]" />
+        <div className="absolute left-1/2 top-0 h-[400px] w-[400px] -translate-x-1/2 rounded-full bg-white/[0.025] blur-[160px]" />
       </div>
 
-      <div className="relative mx-auto  px-6 py-24">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24">
         {/* ── TOP CARD ── */}
-        <div className="rounded-[36px] border border-white/10 bg-gradient-to-b from-white/[0.03] to-white/[0.015] p-10 backdrop-blur-xl lg:p-14">
-          <div className="grid gap-14 lg:grid-cols-[1.4fr_3fr_1.3fr]">
+        <div className="rounded-2xl sm:rounded-3xl lg:rounded-[36px] border border-white/10 bg-gradient-to-b from-white/[0.03] to-white/[0.015] p-5 sm:p-8 lg:p-14 backdrop-blur-xl">
+          {/* Brand + Nav + Newsletter */}
+          <div className="grid gap-10 lg:gap-14 lg:grid-cols-[1.2fr_2.5fr_1.3fr]">
             {/* Brand + features */}
             <div>
               <Link
                 href="/"
-                className="mb-8 flex items-center gap-4"
+                className="mb-6 sm:mb-8 flex items-center gap-3"
                 aria-label="Codédex home"
               >
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shrink-0">
-                  <Brain size={30} aria-hidden="true" />
+                <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-white text-black shrink-0">
+                  <Brain size={24} aria-hidden="true" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold leading-none">
+                  <p className="text-xl sm:text-2xl font-bold leading-none">
                     Cod&#233;dex
                   </p>
-                  <p className="text-sm text-zinc-400 mt-1">
+                  <p className="text-xs sm:text-sm text-zinc-400 mt-1">
                     Learn. Practice. Master.
                   </p>
                 </div>
               </Link>
 
-              <p className="max-w-sm leading-8 text-zinc-400">
+              <p className="text-sm sm:text-base leading-7 sm:leading-8 text-zinc-400">
                 India&apos;s next generation AI learning platform for JEE Main
-                &amp; Advanced aspirants. Master concepts, solve questions and
-                improve every single day.
+                &amp; Advanced aspirants.
               </p>
 
-              <div className="mt-10 space-y-6">
+              <div className="mt-7 sm:mt-10 space-y-4 sm:space-y-6">
                 {features.map((item) => (
                   <Feature key={item.title} {...item} />
                 ))}
@@ -275,7 +295,7 @@ export default function Footer() {
 
             {/* Nav columns */}
             <nav aria-label="Footer navigation">
-              <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-8 sm:grid-cols-2 lg:grid-cols-4 sm:gap-10">
                 <FooterColumn title="Study" links={studyLinks} />
                 <FooterColumn title="Exams" links={examLinks} />
                 <FooterColumn title="Resources" links={resourceLinks} />
@@ -285,43 +305,45 @@ export default function Footer() {
 
             {/* Newsletter */}
             <div>
-              <h3 className="text-3xl font-bold leading-tight">
+              <h3 className="text-2xl sm:text-3xl font-bold leading-tight">
                 Stay Ahead.
                 <br />
                 Every Week.
               </h3>
-              <p className="mt-5 leading-7 text-zinc-400">
-                Join thousands of JEE aspirants receiving preparation tips,
-                strategy guides and exam updates directly in their inbox.
+              <p className="mt-4 sm:mt-5 text-sm sm:text-base leading-7 text-zinc-400">
+                Join thousands of JEE aspirants receiving preparation tips and
+                exam updates.
               </p>
 
-              <div className="mt-8">
+              <div className="mt-6 sm:mt-8 space-y-3">
                 <label htmlFor="footer-email" className="sr-only">
                   Email address
                 </label>
                 <div className="relative">
                   <Mail
-                    size={18}
-                    className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none"
-                    aria-hidden="true"
+                    size={16}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none z-10"
+                    aria-hidden
                   />
-                  <input
+                  <Input
                     id="footer-email"
                     type="email"
                     name="email"
                     autoComplete="email"
                     placeholder="Enter your email"
-                    className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.03] pl-14 pr-5 text-white placeholder:text-zinc-500 outline-none transition focus:border-white/30 focus:ring-0"
+                    className="h-12 sm:h-14 pl-11 bg-white/[0.03] border-white/10 text-white placeholder:text-zinc-500 focus-visible:border-white/30 focus-visible:ring-0 rounded-xl sm:rounded-2xl"
                   />
                 </div>
-                <button
+
+                <Button
                   type="button"
-                  className="mt-4 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-white font-semibold text-black transition hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-white text-black hover:bg-zinc-100 font-semibold gap-2 text-sm sm:text-base"
                 >
                   Subscribe
-                  <Send size={17} aria-hidden="true" />
-                </button>
-                <p className="mt-4 text-sm text-zinc-500">
+                  <Send size={15} aria-hidden />
+                </Button>
+
+                <p className="text-xs text-zinc-500">
                   No spam. Unsubscribe anytime.
                 </p>
               </div>
@@ -329,21 +351,23 @@ export default function Footer() {
           </div>
 
           {/* Trust cards */}
-          <div className="mt-16 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-10 sm:mt-16 grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {trustCards.map((card) => (
               <TrustCard key={card.title} {...card} />
             ))}
           </div>
         </div>
 
-        {/* ── SEO KEYWORDS ── */}
-        <div className="mt-24">
-          <div className="flex items-center gap-3">
-            <Compass size={18} className="text-zinc-400" aria-hidden="true" />
-            <h2 className="text-lg font-semibold">Popular Searches</h2>
+        {/* ── SEO Keywords ── */}
+        <div className="mt-12 sm:mt-16 lg:mt-24">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Compass size={16} className="text-zinc-400 shrink-0" aria-hidden />
+            <h2 className="text-base sm:text-lg font-semibold">
+              Popular Searches
+            </h2>
           </div>
           <div
-            className="mt-8 flex flex-wrap gap-3"
+            className="mt-4 sm:mt-6 flex flex-wrap gap-2 sm:gap-3"
             role="list"
             aria-label="Popular search topics"
           >
@@ -352,7 +376,7 @@ export default function Footer() {
                 key={keyword}
                 href={`/${keyword.toLowerCase().replace(/\s+/g, "-")}`}
                 role="listitem"
-                className="rounded-full border border-white/10 bg-white/[0.03] px-5 py-2 text-sm text-zinc-400 transition hover:border-white/20 hover:bg-white/5 hover:text-white"
+                className="rounded-full border border-white/10 bg-white/[0.03] px-3 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm text-zinc-400 transition hover:border-white/20 hover:bg-white/5 hover:text-white"
               >
                 {keyword}
               </Link>
@@ -360,59 +384,43 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* ── DIVIDER ── */}
+        {/* ── Divider ── */}
         <div
-          className="my-16 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"
-          aria-hidden="true"
+          className="my-10 sm:my-16 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"
+          aria-hidden
         />
 
-        {/* ── BOTTOM ── */}
-        <div className="grid gap-10 lg:grid-cols-[2fr_1fr]">
-          {/* Left */}
+        {/* ── Bottom ── */}
+        <div className="grid gap-8 sm:gap-10 lg:grid-cols-[2fr_1fr]">
           <div>
-            <h2 className="text-lg font-semibold">
+            <h2 className="text-base sm:text-lg font-semibold">
               The Modern Platform for JEE Preparation
             </h2>
-            <p className="mt-5 max-w-full leading-8 text-zinc-400">
+            <p className="mt-3 sm:mt-5 text-sm leading-7 sm:leading-8 text-zinc-400">
               Prepare for JEE Main and JEE Advanced with AI-powered practice,
               chapter-wise questions, previous year papers, adaptive mock tests,
               revision notes, formula sheets, concept maps, personalized study
-              plans and detailed performance analytics. Our goal is to make IIT
-              preparation smarter, more engaging and more effective for every
-              student.
+              plans and detailed performance analytics.
             </p>
             <nav
               aria-label="Legal links"
-              className="mt-10 flex flex-wrap gap-4 text-sm text-zinc-500"
+              className="mt-6 sm:mt-10 flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-zinc-500"
             >
-              <Link
-                href="/privacy-policy"
-                className="hover:text-white transition"
-              >
-                Privacy
-              </Link>
-              <Link href="/terms" className="hover:text-white transition">
-                Terms
-              </Link>
-              <Link href="/contact" className="hover:text-white transition">
-                Contact
-              </Link>
-              <Link href="/blog" className="hover:text-white transition">
-                Blog
-              </Link>
-              <Link href="/sitemap.xml" className="hover:text-white transition">
-                Sitemap
-              </Link>
-              <Link href="/robots.txt" className="hover:text-white transition">
-                Robots
-              </Link>
+              {legalLinks.map(({ name, href }) => (
+                <Link
+                  key={name}
+                  href={href}
+                  className="hover:text-white transition"
+                >
+                  {name}
+                </Link>
+              ))}
             </nav>
           </div>
 
-          {/* Right */}
-          <div className="flex flex-col items-start lg:items-end">
+          <div className="flex flex-col items-start lg:items-end gap-6 sm:gap-8">
             <div
-              className="flex gap-3"
+              className="flex gap-2 sm:gap-3"
               role="list"
               aria-label="Social media links"
             >
@@ -424,28 +432,28 @@ export default function Footer() {
                   aria-label={label}
                   rel="noopener noreferrer"
                   target="_blank"
-                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:-translate-y-1 hover:border-white/20 hover:bg-white/5"
+                  className="rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4 transition hover:-translate-y-1 hover:border-white/20 hover:bg-white/5"
                 >
-                  <Icon size={18} aria-hidden="true" />
+                  <Icon size={16} aria-hidden />
                 </Link>
               ))}
             </div>
-            <div className="mt-8 text-sm leading-7 text-zinc-500 lg:text-right">
+            <div className="text-xs sm:text-sm leading-6 sm:leading-7 text-zinc-500 lg:text-right">
               <p>&copy; {currentYear} Cod&#233;dex.</p>
               <p>Built with &#10084;&#65039; for every IIT Aspirant.</p>
             </div>
           </div>
         </div>
 
-        {/* ── DISCLAIMER ── */}
-        <div className="mt-20 rounded-3xl border border-white/10 bg-white/[0.025] p-8">
-          <div className="flex items-start gap-5">
-            <div className="rounded-2xl bg-white/5 p-3 shrink-0">
-              <FileText size={22} aria-hidden="true" />
+        {/* ── Disclaimer ── */}
+        <div className="mt-10 sm:mt-16 lg:mt-20 rounded-2xl sm:rounded-3xl border border-white/10 bg-white/[0.025] p-5 sm:p-8">
+          <div className="flex items-start gap-3 sm:gap-5">
+            <div className="rounded-xl sm:rounded-2xl bg-white/5 p-2.5 sm:p-3 shrink-0">
+              <FileText size={18} aria-hidden />
             </div>
             <div>
-              <h3 className="font-semibold">Disclaimer</h3>
-              <p className="mt-3 leading-8 text-zinc-500">
+              <h3 className="text-sm sm:text-base font-semibold">Disclaimer</h3>
+              <p className="mt-2 sm:mt-3 text-xs sm:text-sm leading-6 sm:leading-8 text-zinc-500">
                 Cod&#233;dex is an independent educational platform created to
                 help students prepare for engineering entrance examinations. We
                 are not affiliated with IIT, NTA, JoSAA, CBSE or any government

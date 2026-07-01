@@ -2,8 +2,19 @@
 
 import Link from "next/link";
 import { Clock3, Bookmark, CheckCircle2, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+
+const DIFFICULTY_STYLES = {
+  Easy: "bg-muted text-muted-foreground hover:bg-muted",
+  Medium: "bg-primary text-primary-foreground hover:bg-primary",
+  Hard: "bg-foreground text-background hover:bg-foreground",
+};
 
 export default function QuestionCard({
+  href,
   title = "Maximum Subarray Sum",
   difficulty = "Medium",
   subject = "Mathematics",
@@ -14,74 +25,74 @@ export default function QuestionCard({
   bookmarked = false,
   questions = 18,
 }) {
-  const difficultyStyles = {
-    Easy: "bg-neutral-100 text-neutral-700",
-    Medium: "bg-neutral-900 text-white",
-    Hard: "bg-black text-white",
-  };
-
-  const slug = title
+  const fallbackHref = `/problems/solve/${title
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "")
     .trim()
-    .replace(/\s+/g, "-");
+    .replace(/\s+/g, "-")}`;
 
   return (
-    <Link
-      href={`/problems/solve/${slug}`}
-      className="group block w-full rounded-3xl border border-neutral-200 bg-white p-6 text-left transition-all duration-300 hover:-translate-y-1 hover:border-neutral-300 hover:shadow-lg"
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div
-            className={`rounded-full px-3 py-1 text-[11px] font-semibold ${difficultyStyles[difficulty]}`}
-          >
-            {difficulty}
+    <Card className="rounded-3xl border-border p-0 shadow-none transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+      <Link
+        href={href ?? fallbackHref}
+        className="group block w-full p-6 text-left"
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <Badge
+              className={cn(
+                "rounded-full text-[11px] font-semibold",
+                DIFFICULTY_STYLES[difficulty],
+              )}
+            >
+              {difficulty}
+            </Badge>
+            <span className="text-xs text-muted-foreground">{subject}</span>
           </div>
 
-          <div className="text-xs text-neutral-400">{subject}</div>
+          {bookmarked && (
+            <Bookmark size={17} className="fill-foreground text-foreground" />
+          )}
         </div>
 
-        {bookmarked && <Bookmark size={17} className="fill-black text-black" />}
-      </div>
+        {/* Title */}
+        <h2 className="mt-5 text-xl font-bold tracking-tight text-foreground transition-colors group-hover:text-primary">
+          {title}
+        </h2>
 
-      {/* Title */}
-      <h2 className="mt-5 text-xl font-bold tracking-tight text-neutral-900 transition-colors group-hover:text-black">
-        {title}
-      </h2>
+        {/* Chapter */}
+        <p className="mt-2 text-sm text-muted-foreground">{chapter}</p>
 
-      {/* Chapter */}
-      <p className="mt-2 text-sm text-neutral-500">{chapter}</p>
-
-      {/* Stats */}
-      <div className="mt-6 flex flex-wrap items-center gap-5 text-sm text-neutral-500">
-        <div className="flex items-center gap-2">
-          <Clock3 size={15} />
-          {time}
-        </div>
-
-        <div className="font-semibold text-neutral-900">+{xp} XP</div>
-
-        <div>{questions} attempts</div>
-      </div>
-
-      {/* Footer */}
-      <div className="mt-6 flex items-center justify-between border-t border-neutral-100 pt-5">
-        {solved ? (
-          <div className="flex items-center gap-2 text-sm font-medium text-neutral-900">
-            <CheckCircle2 size={18} />
-            Solved
+        {/* Stats */}
+        <div className="mt-6 flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Clock3 size={15} />
+            {time}
           </div>
-        ) : (
-          <div className="text-sm text-neutral-400">Start Challenge</div>
-        )}
+          <span className="font-semibold text-foreground">+{xp} XP</span>
+          <span>{questions} attempts</span>
+        </div>
 
-        <ChevronRight
-          size={18}
-          className="text-neutral-400 transition-transform duration-300 group-hover:translate-x-1"
-        />
-      </div>
-    </Link>
+        {/* Footer */}
+        <Separator className="mt-6" />
+        <div className="flex items-center justify-between pt-5">
+          {solved ? (
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <CheckCircle2 size={18} />
+              Solved
+            </div>
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              Start Challenge
+            </span>
+          )}
+          <ChevronRight
+            size={18}
+            className="text-muted-foreground transition-transform duration-300 group-hover:translate-x-1"
+          />
+        </div>
+      </Link>
+    </Card>
   );
 }

@@ -494,7 +494,7 @@ export default function TodaysQuestion() {
       />
 
       {/* Full-screen centering wrapper */}
-      <div className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-12 bg-neutral-50">
+      <div className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-12 ">
         <div className="w-full max-w-2xl mb-6 px-1">
           <div className="flex items-center gap-3 mb-1">
             <span className="text-2xl">🧠</span>
@@ -514,10 +514,10 @@ export default function TodaysQuestion() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-neutral-200 bg-white shadow-[0_24px_60px_rgba(0,0,0,.08)]"
+          className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-neutral-200 bg-white "
         >
           {/* Progress bar */}
-          <div className="h-[3px] bg-neutral-100">
+          <div className="">
             <motion.div
               initial={{ width: 0 }}
               animate={{
