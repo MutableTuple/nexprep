@@ -11,7 +11,6 @@ import ProblemCard from "./ProblemCard";
 import TagList from "./TagList";
 import HintsSection from "./HintsSection";
 import AnswerPanel from "./AnswerPanel";
-import ProblemFooter from "./ProblemFooter";
 import MobileAnswerSheet from "./MobileAnswerSheet";
 import LoadingScreen from "./LoadingScreen";
 import ErrorScreen from "./ErrorScreen";

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Brain,
   Eye,
@@ -12,6 +13,8 @@ import {
   User,
   CheckCircle2,
   XCircle,
+  MailCheck,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +22,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { showToast } from "../_lib/toast";
+import { supabase } from "../_lib/supabase";
+import { isUsernameAvailable } from "../_lib/data-service";
 
 // ─── Password Rules ────────────────────────────────────────────────────────────
 
@@ -28,6 +34,65 @@ const RULES = [
   { label: "One uppercase letter", test: (p) => /[A-Z]/.test(p) },
   { label: "One number", test: (p) => /[0-9]/.test(p) },
 ];
+
+function slugifyUsername(name) {
+  return (
+    name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "") // strip accents
+      .replace(/[^a-z0-9]+/g, "")
+      .slice(0, 20) || "user"
+  );
+}
+
+async function generateAvailableUsername(name) {
+  const base = slugifyUsername(name);
+
+  if (await isUsernameAvailable(base)) return base;
+
+  for (let i = 0; i < 5; i++) {
+    const candidate = `${base}${Math.floor(1000 + Math.random() * 9000)}`;
+    if (await isUsernameAvailable(candidate)) return candidate;
+  }
+
+  // guaranteed-unique last resort if 5 random attempts all collided
+  return `${base}${Date.now().toString(36).slice(-6)}`;
+}
+
+// generates a few real, availability-checked options instead of one guess
+async function generateUsernameSuggestions(name, count = 3) {
+  const base = slugifyUsername(name);
+  const candidates = [
+    base,
+    `${base}${Math.floor(10 + Math.random() * 90)}`,
+    `${base}_${Math.floor(1 + Math.random() * 9)}`,
+  ];
+
+  const available = [];
+  for (const candidate of candidates) {
+    if (available.length >= count) break;
+    if (await isUsernameAvailable(candidate)) available.push(candidate);
+  }
+
+  let attempts = 0;
+  while (available.length < count && attempts < 5) {
+    const candidate = `${base}${Math.floor(1000 + Math.random() * 9000)}`;
+    if (
+      !available.includes(candidate) &&
+      (await isUsernameAvailable(candidate))
+    ) {
+      available.push(candidate);
+    }
+    attempts++;
+  }
+
+  if (available.length === 0) {
+    available.push(`${base}${Date.now().toString(36).slice(-6)}`);
+  }
+
+  return available;
+}
 
 // ─── Google Icon ───────────────────────────────────────────────────────────────
 
@@ -104,11 +169,52 @@ function PasswordStrength({ password }) {
 // ─── SignupPage ────────────────────────────────────────────────────────────────
 
 export default function SignupPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [sentTo, setSentTo] = useState("");
+
+  const [suggestions, setSuggestions] = useState([]);
+  const [selectedUsername, setSelectedUsername] = useState("");
+  const [checkingUsername, setCheckingUsername] = useState(false);
+
+  useEffect(() => {
+    if (!name.trim()) {
+      setSuggestions([]);
+      setSelectedUsername("");
+      return;
+    }
+
+    let cancelled = false;
+    setCheckingUsername(true);
+
+    const timeout = setTimeout(async () => {
+      try {
+        const options = await generateUsernameSuggestions(name);
+        if (cancelled) return;
+        setSuggestions(options);
+        setSelectedUsername(options[0]);
+      } catch (err) {
+        console.error("Username check failed:", err);
+        if (!cancelled) {
+          const fallback = slugifyUsername(name);
+          setSuggestions([fallback]);
+          setSelectedUsername(fallback);
+        }
+      } finally {
+        if (!cancelled) setCheckingUsername(false);
+      }
+    }, 500); // debounce so we're not hitting the DB on every keystroke
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [name]);
 
   const allRulesPassed = RULES.every((r) => r.test(password));
 
@@ -126,12 +232,54 @@ export default function SignupPage() {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1400));
+
+    // reuse whatever was already checked/picked; only regenerate if the
+    // debounce genuinely hasn't resolved yet (submitted within ~500ms)
+    const username =
+      selectedUsername || (await generateAvailableUsername(name));
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name, username },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
     setLoading(false);
-    showToast.success(
-      "Account created!",
-      "Welcome to Codédex. Let's start solving.",
-    );
+
+    if (error) {
+      showToast.error("Signup failed", error.message);
+      return;
+    }
+
+    // email confirmation disabled in Supabase → session comes back immediately
+    if (data.session) {
+      showToast.success(
+        "Account created!",
+        "Welcome to Codédex. Let's start solving.",
+      );
+      router.push("/dashboard");
+      router.refresh();
+      return;
+    }
+
+    setSentTo(email);
+  }
+
+  async function handleGoogleSignup() {
+    setGoogleLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      setGoogleLoading(false);
+      showToast.error("Google signup failed", error.message);
+    }
   }
 
   return (
@@ -154,179 +302,231 @@ export default function SignupPage() {
               BETA
             </Badge>
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">
-              Create your account
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Join thousands of JEE aspirants on Codédex
-            </p>
-          </div>
+          {!sentTo && (
+            <div>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                Create your account
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Join thousands of JEE aspirants on Codédex
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Card */}
-        <Card className="bg-card border-border shadow-none rounded-2xl">
-          <CardContent className="p-6 flex flex-col gap-5">
-            {/* Google */}
-            <Button
-              variant="outline"
-              className="w-full gap-2 rounded-xl h-11 font-medium"
-              onClick={() => showToast.info("Google signup", "Coming soon!")}
-            >
-              <GoogleIcon />
-              Continue with Google
-            </Button>
-
-            <div className="flex items-center gap-3">
-              <Separator className="flex-1" />
-              <span className="text-xs text-muted-foreground">or</span>
-              <Separator className="flex-1" />
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              {/* Name */}
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="name" className="text-sm font-medium">
-                  Full Name
-                </Label>
-                <div className="relative">
-                  <User
-                    size={15}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-                  />
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Arjun Sharma"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="pl-9 h-11 rounded-xl bg-background"
-                    autoComplete="name"
-                  />
-                </div>
+        {sentTo ? (
+          <Card className="bg-card border-border shadow-none rounded-2xl">
+            <CardContent className="p-6 flex flex-col items-center text-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <MailCheck size={22} className="text-primary" />
               </div>
-
-              {/* Email */}
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="email" className="text-sm font-medium">
-                  Email
-                </Label>
-                <div className="relative">
-                  <Mail
-                    size={15}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-                  />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-9 h-11 rounded-xl bg-background"
-                    autoComplete="email"
-                  />
-                </div>
-              </div>
-
-              {/* Password */}
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="password" className="text-sm font-medium">
-                  Password
-                </Label>
-                <div className="relative">
-                  <Lock
-                    size={15}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-                  />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-9 pr-10 h-11 rounded-xl bg-background"
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
-                  >
-                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                  </button>
-                </div>
-                <PasswordStrength password={password} />
-              </div>
-
-              {/* Terms */}
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                By signing up you agree to our{" "}
-                <Link
-                  href="/terms"
-                  className="text-foreground font-medium hover:underline underline-offset-4"
-                >
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link
-                  href="/privacy"
-                  className="text-foreground font-medium hover:underline underline-offset-4"
-                >
-                  Privacy Policy
-                </Link>
-                .
+              <h2 className="text-base font-semibold text-foreground">
+                Check your inbox
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                We sent a confirmation link to <strong>{sentTo}</strong>. Click
+                it to activate your account, then log in.
               </p>
+              <Link href="/login" className="w-full">
+                <Button variant="outline" className="w-full rounded-xl mt-2">
+                  Back to login
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Card */}
+            <Card className="bg-card border-border shadow-none rounded-2xl">
+              <CardContent className="p-6 flex flex-col gap-5">
+                {/* Google */}
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 rounded-xl h-11 font-medium"
+                  onClick={handleGoogleSignup}
+                  disabled={googleLoading}
+                  type="button"
+                >
+                  <GoogleIcon />
+                  Continue with Google
+                </Button>
 
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full h-11 rounded-xl font-semibold gap-2"
-              >
-                {loading ? (
-                  <svg
-                    className="animate-spin h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
+                <div className="flex items-center gap-3">
+                  <Separator className="flex-1" />
+                  <span className="text-xs text-muted-foreground">or</span>
+                  <Separator className="flex-1" />
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                  {/* Name */}
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="name" className="text-sm font-medium">
+                      Full Name
+                    </Label>
+                    <div className="relative">
+                      <User
+                        size={15}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+                      />
+                      <Input
+                        id="name"
+                        type="text"
+                        placeholder="Arjun Sharma"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="pl-9 h-11 rounded-xl bg-background"
+                        autoComplete="name"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Username suggestions */}
+                  {name && (
+                    <div className="flex flex-col gap-1.5 -mt-1">
+                      <span className="text-[11px] text-muted-foreground pl-1">
+                        {checkingUsername
+                          ? "Finding available usernames..."
+                          : "Pick a username"}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {checkingUsername
+                          ? Array.from({ length: 3 }).map((_, i) => (
+                              <div
+                                key={i}
+                                className="h-7 w-24 rounded-full bg-muted animate-pulse"
+                              />
+                            ))
+                          : suggestions.map((s) => (
+                              <button
+                                key={s}
+                                type="button"
+                                onClick={() => setSelectedUsername(s)}
+                                className={cn(
+                                  "px-3 py-1 rounded-full text-xs font-medium border transition-colors",
+                                  selectedUsername === s
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground",
+                                )}
+                              >
+                                @{s}
+                              </button>
+                            ))}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground pl-1">
+                        You can change this later in your profile.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Email */}
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="email" className="text-sm font-medium">
+                      Email
+                    </Label>
+                    <div className="relative">
+                      <Mail
+                        size={15}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+                      />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-9 h-11 rounded-xl bg-background"
+                        autoComplete="email"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password */}
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="password" className="text-sm font-medium">
+                      Password
+                    </Label>
+                    <div className="relative">
+                      <Lock
+                        size={15}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+                      />
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-9 pr-10 h-11 rounded-xl bg-background"
+                        autoComplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
+                      >
+                        {showPassword ? (
+                          <EyeOff size={15} />
+                        ) : (
+                          <Eye size={15} />
+                        )}
+                      </button>
+                    </div>
+                    <PasswordStrength password={password} />
+                  </div>
+
+                  {/* Terms */}
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    By signing up you agree to our{" "}
+                    <Link
+                      href="/terms"
+                      className="text-foreground font-medium hover:underline underline-offset-4"
+                    >
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link
+                      href="/privacy"
+                      className="text-foreground font-medium hover:underline underline-offset-4"
+                    >
+                      Privacy Policy
+                    </Link>
+                    .
+                  </p>
+
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full h-11 rounded-xl font-semibold gap-2"
                   >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"
-                    />
-                  </svg>
-                ) : (
-                  <>
-                    Create account
-                    <ArrowRight size={15} />
-                  </>
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                    {loading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <>
+                        Create account
+                        <ArrowRight size={15} />
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
 
-        {/* Footer */}
-        <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link
-            href="/login"
-            className="font-semibold text-foreground hover:underline underline-offset-4 transition-colors"
-          >
-            Log in
-          </Link>
-        </p>
+            {/* Footer */}
+            <p className="text-center text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="font-semibold text-foreground hover:underline underline-offset-4 transition-colors"
+              >
+                Log in
+              </Link>
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

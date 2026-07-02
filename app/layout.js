@@ -10,7 +10,7 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
   display: "swap",
 });
-
+import { AuthProvider } from "./_lib/AuthProvider";
 export const metadata = {
   title: "JEE Platform",
   description: "India's most gamified JEE preparation platform",
@@ -24,9 +24,11 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-background font-sans text-foreground">
-        <Providers>
-          {children} <MainToast />
-        </Providers>
+        <AuthProvider>
+          <Providers>
+            {children} <MainToast />
+          </Providers>
+        </AuthProvider>
       </body>
     </html>
   );

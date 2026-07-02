@@ -22,7 +22,8 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
-
+import LogoutButton from "./LogoutButton";
+import { useUser } from "../_lib/AuthProvider";
 const links = [
   { name: "Problems", href: "/problems" },
   { name: "Leaderboard", href: "/leaderboard" },
@@ -85,6 +86,7 @@ function ThemeToggle() {
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { user } = useUser();
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
@@ -132,9 +134,13 @@ export default function Navbar() {
         {/* Desktop right */}
         <div className="hidden md:flex items-center gap-1">
           <ThemeToggle />
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/login">Log in</Link>
-          </Button>
+          {user ? (
+            <LogoutButton />
+          ) : (
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/login">Log in</Link>
+            </Button>
+          )}
           <Button size="sm" className="gap-1.5" asChild>
             <Link href="/signup">
               Get Started
@@ -194,9 +200,13 @@ export default function Navbar() {
               <Separator />
 
               <div className="flex flex-col gap-2 px-4 py-4">
-                <Button variant="outline" className="w-full" asChild>
-                  <Link href="/login">Log in</Link>
-                </Button>
+                {user ? (
+                  <LogoutButton className="w-full gap-1.5 rounded-xl" />
+                ) : (
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href="/login">Log in</Link>
+                  </Button>
+                )}
                 <Button className="w-full gap-1.5" asChild>
                   <Link href="/signup">
                     Get Started

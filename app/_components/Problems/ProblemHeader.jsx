@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -26,6 +29,20 @@ export default function ProblemHeader({
   subject,
   xp,
 }) {
+  const [particles, setParticles] = useState([]);
+  const wasAnimating = useRef(false);
+
+  useEffect(() => {
+    if (xpAnimating && !wasAnimating.current) {
+      const id = Date.now() + Math.random();
+      setParticles((prev) => [...prev, { id, xp }]);
+      setTimeout(() => {
+        setParticles((prev) => prev.filter((p) => p.id !== id));
+      }, 1100);
+    }
+    wasAnimating.current = xpAnimating;
+  }, [xpAnimating, xp]);
+
   return (
     <header className="sticky top-0 z-30 bg-background/90 backdrop-blur-[14px] border-b">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-3 sm:gap-4">
@@ -55,16 +72,30 @@ export default function ProblemHeader({
             <Flame size={12} className="text-orange-500" />
             18
           </Badge>
-          <Badge
-            className={`hidden sm:flex gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold transition-all duration-300 ${
-              xpAnimating
-                ? "bg-primary text-primary-foreground scale-105"
-                : "bg-muted text-muted-foreground"
-            }`}
-          >
-            <Zap size={12} className={xpAnimating ? "text-yellow-400" : ""} />+
-            {xp} XP
-          </Badge>
+          <div className="relative hidden sm:block">
+            <Badge
+              className={`gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+                xpAnimating
+                  ? "bg-primary text-primary-foreground scale-105"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              <Zap size={12} className={xpAnimating ? "text-yellow-400" : ""} />
+              +{xp} XP
+            </Badge>
+            {particles.map((p) => (
+              <span
+                key={p.id}
+                className="xp-particle pointer-events-none absolute left-1/2 top-0 whitespace-nowrap text-sm font-extrabold text-yellow-500 drop-shadow-[0_0_6px_rgba(250,204,21,0.5)]"
+              >
+                <Zap
+                  size={11}
+                  className="inline -mt-0.5 mr-0.5 fill-yellow-400"
+                />
+                +{p.xp} XP
+              </span>
+            ))}
+          </div>
           <Badge
             variant="outline"
             className="hidden md:inline-flex rounded-full text-xs font-semibold"
@@ -95,6 +126,26 @@ export default function ProblemHeader({
           {progress}% complete
         </span>
       </div>
+
+      <style jsx global>{`
+        @keyframes xp-float-fade {
+          0% {
+            opacity: 0;
+            transform: translate(-50%, 4px) scale(0.85);
+          }
+          15% {
+            opacity: 1;
+            transform: translate(-50%, -6px) scale(1.15);
+          }
+          100% {
+            opacity: 0;
+            transform: translate(-50%, -34px) scale(1);
+          }
+        }
+        .xp-particle {
+          animation: xp-float-fade 1.1s ease-out forwards;
+        }
+      `}</style>
     </header>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Brain, Eye, EyeOff, ArrowRight, Mail, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -11,15 +12,18 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { showToast } from "../_lib/toast";
+import { supabase } from "../_lib/supabase";
 
 // ─── Social Button ─────────────────────────────────────────────────────────────
 
-function SocialButton({ icon, label, onClick }) {
+function SocialButton({ icon, label, onClick, disabled }) {
   return (
     <Button
       variant="outline"
       className="w-full gap-2 rounded-xl h-11 font-medium"
       onClick={onClick}
+      disabled={disabled}
+      type="button"
     >
       {icon}
       {label}
@@ -55,10 +59,12 @@ function GoogleIcon() {
 // ─── LoginPage ─────────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -66,10 +72,38 @@ export default function LoginPage() {
       showToast.error("Missing fields", "Please fill in all fields.");
       return;
     }
+
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     setLoading(false);
+
+    if (error) {
+      showToast.error("Login failed", error.message);
+      return;
+    }
+
     showToast.success("Welcome back!", "You have been logged in.");
+    router.push("/user/name/profile");
+    router.refresh();
+  }
+
+  async function handleGoogleLogin() {
+    setGoogleLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      setGoogleLoading(false);
+      showToast.error("Google login failed", error.message);
+    }
+    // on success the browser is redirected to Google, so no further state change here
   }
 
   return (
@@ -110,7 +144,8 @@ export default function LoginPage() {
               <SocialButton
                 icon={<GoogleIcon />}
                 label="Continue with Google"
-                onClick={() => showToast.info("Google login", "Coming soon!")}
+                onClick={handleGoogleLogin}
+                disabled={googleLoading}
               />
             </div>
 
