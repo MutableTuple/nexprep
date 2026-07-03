@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "../_lib/supabase";
+import { useProfile } from "../_lib/use-profile";
 
 function getInitials(name) {
   return (name || "?")
@@ -25,6 +26,7 @@ function getInitials(name) {
 
 export default function ProfileDropdown({ user }) {
   const router = useRouter();
+  const { profile } = useProfile();
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -32,8 +34,15 @@ export default function ProfileDropdown({ user }) {
     router.refresh();
   }
 
+  if (!user) return null;
+
   const displayName =
-    user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Profile";
+    profile?.full_name ||
+    user.user_metadata?.full_name ||
+    user.email?.split("@")[0] ||
+    "Profile";
+
+  const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url;
 
   return (
     <DropdownMenu>
@@ -44,10 +53,7 @@ export default function ProfileDropdown({ user }) {
           aria-label="Open profile menu"
         >
           <Avatar className="h-8 w-8 border border-border">
-            <AvatarImage
-              src={user?.user_metadata?.avatar_url}
-              alt={displayName}
-            />
+            <AvatarImage src={avatarUrl} alt={displayName} />
             <AvatarFallback className="text-xs font-bold bg-primary text-primary-foreground">
               {getInitials(displayName)}
             </AvatarFallback>
@@ -55,12 +61,10 @@ export default function ProfileDropdown({ user }) {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56 rounded-xl">
-        <DropdownMenuLabel className="truncate">
-          {displayName}
-        </DropdownMenuLabel>
+        <DropdownMenuLabel className="truncate">{displayName}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/profile" className="cursor-pointer gap-2">
+          <Link href={`/user/${user.id}/profile`} className="cursor-pointer gap-2">
             <UserIcon size={14} />
             My Profile
           </Link>

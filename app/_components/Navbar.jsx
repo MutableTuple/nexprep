@@ -34,9 +34,7 @@ const links = [
   { name: "Blog", href: "/blog" },
 ];
 
-// Purely presentational — has no business knowing about auth state, so it
-// doesn't call useUser() at all. It didn't before this fix either; that was
-// a stray/misplaced hook call left over from editing Navbar.
+
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);

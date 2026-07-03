@@ -151,10 +151,18 @@ function handle({ data, error }) {
    ============================================================ */
 
 export async function getProfile(userId) {
-  return handle(
-    await supabase.from("profiles").select("*").eq("id", userId).single(),
-  );
+  if (!userId) return null;
+
+  try {
+    return await handle(
+      await supabase.from("profiles").select("*").eq("id", userId).single(),
+    );
+  } catch (err) {
+    console.error("getProfile failed:", err.message);
+    return null; // caller falls back to the auth user object
+  }
 }
+
 export async function isUsernameAvailable(username) {
   const { data, error } = await supabase
     .from("profiles")

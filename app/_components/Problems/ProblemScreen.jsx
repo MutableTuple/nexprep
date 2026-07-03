@@ -1,32 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import {
-  Search,
-  Flame,
-  Trophy,
-  Target,
-  X,
-  SlidersHorizontal,
-  AlertCircle,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
-import QuestionCard from "./QuestionCard";
 import { Spinner } from "../Spinner";
 import { getQuestions } from "@/app/_lib/data-service";
-import GlassCard from "./GlassCard";
-import StatCard from "./StatCard";
-import FilterChip from "./FilterChip";
+
 import HeroSection from "./HeroSection";
 import SearchBar from "./SearchBar";
 import DifficultyFilter from "./DifficultyFilter";
