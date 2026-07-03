@@ -323,9 +323,13 @@ export async function getSolvedQuestionForUser(userId, questionId) {
 }
 
 export async function recordSolvedQuestion(entry) {
-  return handle(
-    await supabase.from("solved_questions").insert(entry).select().single(),
-  );
+  const { data, error } = await supabase
+    .from("solved_questions")
+    .upsert(entry, { onConflict: "user_id,question_id" })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 export async function updateSolvedQuestion(id, updates) {
@@ -716,3 +720,44 @@ export async function getLeaderboard(limit = 50) {
   );
 }
 //
+
+export async function getLastSolveDate(userId) {
+  const { data, error } = await supabase
+    .from("solved_questions")
+    .select("solved_at")
+    .eq("user_id", userId)
+    .order("solved_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.solved_at ?? null;
+}
+export async function getLatestPersonalGoal(userId) {
+  const { data, error } = await supabase
+    .from("personal_goals")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function createPersonalGoal(
+  userId,
+  { title, description, targetDate },
+) {
+  const { data, error } = await supabase
+    .from("personal_goals")
+    .insert({
+      user_id: userId,
+      title,
+      description: description || null,
+      target_date: targetDate,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}

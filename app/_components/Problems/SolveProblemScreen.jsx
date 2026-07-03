@@ -1,11 +1,19 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import confetti from "canvas-confetti";
 import { Award, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "../Spinner";
-import { getQuestionById, getQuestions } from "@/app/_lib/data-service";
+import {
+  getQuestionById,
+  getQuestions,
+  getSolvedQuestionForUser,
+  recordSolvedQuestion,
+  getUserStats,
+  getLastSolveDate,
+} from "@/app/_lib/data-service";
 import ProblemHeader from "./ProblemHeader";
 import ProblemCard from "./ProblemCard";
 import TagList from "./TagList";
@@ -16,6 +24,8 @@ import LoadingScreen from "./LoadingScreen";
 import ErrorScreen from "./ErrorScreen";
 import SimilarQuestions from "../SimilarQuestions";
 import YouTubeEmbed from "./YouTubeEmbed";
+import { useUser } from "@/app/_lib/AuthProvider";
+import { showToast } from "@/app/_lib/toast";
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -28,7 +38,7 @@ function useTimer(running) {
   }, [running]);
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
-  return `${mm}:${ss}`;
+  return { timerStr: `${mm}:${ss}`, seconds };
 }
 
 // ─── SolveProblemScreen ───────────────────────────────────────────────────────
@@ -42,13 +52,29 @@ export default function SolveProblemScreen({ questionId }) {
   const [error, setError] = useState(null);
 
   const [selected, setSelected] = useState(null);
+  const [previousValue, setPreviousValue] = useState(""); // restored typed value for numerical questions
   const [submitted, setSubmitted] = useState(false);
+  const [checkingPrior, setCheckingPrior] = useState(true);
+  const [attemptCount, setAttemptCount] = useState(1);
+  const [justAnswered, setJustAnswered] = useState(false); // true only right after a fresh submit, not on load/restore
   const [bookmarked, setBookmarked] = useState(false);
   const [revealedHints, setRevealedHints] = useState(0);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [xpAnimating, setXpAnimating] = useState(false);
 
-  const timerStr = useTimer(!submitted);
+  const { timerStr, seconds: elapsedSeconds } = useTimer(!submitted);
+  const { user, loading: authLoading } = useUser();
+
+  function celebrateStreak(streak) {
+    confetti({
+      particleCount: 120,
+      spread: 75,
+      startVelocity: 40,
+      origin: { y: 0.15 },
+      zIndex: 9999,
+    });
+    showToast.streak(streak);
+  }
 
   // Fetch all IDs once for navigation
   useEffect(() => {
@@ -63,7 +89,21 @@ export default function SolveProblemScreen({ questionId }) {
   const loadQuestion = useCallback(async (id) => {
     try {
       const q = await getQuestionById(id);
+      // Reset everything in the SAME batch as setQuestion — if this reset
+      // lived in a separate effect keyed on question?.id, there'd be one
+      // render where the new question's content is up but submitted/selected
+      // still held the previous question's values (the "wrong answer" flash
+      // on an unanswered question, or on Next/Previous click).
       setQuestion(q);
+      setSelected(null);
+      setPreviousValue("");
+      setSubmitted(false);
+      setCheckingPrior(true);
+      setAttemptCount(1);
+      setJustAnswered(false);
+      setRevealedHints(0);
+      setMobileSheetOpen(false);
+      setXpAnimating(false);
       setError(null);
     } catch (e) {
       setError(e);
@@ -75,13 +115,58 @@ export default function SolveProblemScreen({ questionId }) {
     loadQuestion(questionId).finally(() => setPageLoading(false));
   }, [questionId, loadQuestion]);
 
+  // Once the question (and its reset state) has landed, check whether the
+  // user already solved it — if so, lock the panel and restore what they
+  // picked, so they can't farm XP by navigating away and back.
   useEffect(() => {
-    setSelected(null);
-    setSubmitted(false);
-    setRevealedHints(0);
-    setMobileSheetOpen(false);
-    setXpAnimating(false);
-  }, [question?.id]);
+    if (!question) return;
+    if (authLoading) return; // wait for auth to resolve before deciding
+
+    if (!user) {
+      setCheckingPrior(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    getSolvedQuestionForUser(user.id, question.id)
+      .then((prior) => {
+        if (cancelled) return;
+        setSubmitted(!!prior);
+
+        if (prior) {
+          setAttemptCount(prior.attempts ?? 1);
+
+          if (prior.selected_option) {
+            const isNumerical = ["NUMERICAL", "INTEGER"].includes(
+              question.questionType,
+            );
+            if (isNumerical) {
+              setPreviousValue(prior.selected_option);
+            } else {
+              const priorOptions = (question.options ?? []).map((o) => ({
+                label: o.id,
+                text: o.text,
+              }));
+              const idx = priorOptions.findIndex(
+                (o) => o.label === prior.selected_option,
+              );
+              if (idx !== -1) setSelected(idx);
+            }
+          }
+        }
+
+        setCheckingPrior(false);
+      })
+      .catch((err) => {
+        console.error("Failed to check prior attempt:", err);
+        if (!cancelled) setCheckingPrior(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [question?.id, user?.id, authLoading]);
 
   const navigate = useCallback(
     async (newIndex) => {
@@ -117,9 +202,13 @@ export default function SolveProblemScreen({ questionId }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [currentIndex, allIds]);
 
-  function handleSubmit(value) {
+  async function handleSubmit(value) {
+    if (submitted) return; // already answered — block re-submission entirely
+    if (checkingPrior) return; // still confirming whether this was answered before
     if (selected === null && value === undefined) return;
+
     setSubmitted(true);
+    setJustAnswered(true);
     setMobileSheetOpen(false);
 
     const isNumerical = ["NUMERICAL", "INTEGER"].includes(
@@ -137,10 +226,81 @@ export default function SolveProblemScreen({ questionId }) {
         (question?.data?.tolerance ?? 0)
       : selected === correctIndex;
 
+    const selectedOption = isNumerical
+      ? value != null
+        ? String(value)
+        : null
+      : (options[selected]?.label ?? null);
+
     if (isCorrect) {
       setXpAnimating(true);
       setTimeout(() => setXpAnimating(false), 1200);
     }
+
+    // full XP only on a first-try correct answer; retries earn half, since
+    // otherwise a wrong guess costs nothing and encourages spamming answers
+    const xpEarned = isCorrect
+      ? attemptCount === 1
+        ? XP
+        : Math.round(XP / 2)
+      : 0;
+
+    // Check BEFORE recording whether this is the first solve of a new
+    // calendar day — grounded directly in solved_questions.solved_at rather
+    // than user_stats.streak, so it works even if the streak-maintaining
+    // trigger isn't deployed correctly. Must run before recordSolvedQuestion,
+    // since after that call "last solve" would already be today.
+    let shouldCelebrate = false;
+    if (user) {
+      try {
+        const lastSolveAt = await getLastSolveDate(user.id);
+        if (lastSolveAt) {
+          const lastDay = new Date(lastSolveAt);
+          lastDay.setHours(0, 0, 0, 0);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          shouldCelebrate = today.getTime() > lastDay.getTime();
+        }
+        // lastSolveAt === null means this is their first-ever solve —
+        // nothing to "extend" yet, so no celebration on day one.
+      } catch (err) {
+        console.error("Failed to check last solve date:", err);
+      }
+    }
+
+    recordSolvedQuestion({
+      user_id: user?.id ?? null, // anonymous attempts are still recorded, just unattributed
+      question_id: question.id,
+      is_correct: isCorrect,
+      xp_earned: user ? xpEarned : 0,
+      time_taken: elapsedSeconds,
+      attempts: attemptCount,
+      selected_option: selectedOption,
+    })
+      .then(() => {
+        if (!user || !shouldCelebrate) return;
+        return getUserStats(user.id).then((stats) => {
+          celebrateStreak(stats?.streak ?? 1);
+        });
+      })
+      .catch((err) => {
+        console.error("Failed to record solved question:", err);
+      });
+
+    if (!user) {
+      showToast.info(
+        "Answer recorded",
+        "Sign in to save XP and streaks to your profile.",
+      );
+    }
+  }
+
+  function handleRetry() {
+    setSubmitted(false);
+    setSelected(null);
+    setPreviousValue("");
+    setJustAnswered(false);
+    setAttemptCount((c) => c + 1);
   }
 
   if (pageLoading) return <LoadingScreen />;
@@ -170,8 +330,12 @@ export default function SolveProblemScreen({ questionId }) {
       xp={XP}
       submitted={submitted}
       selected={selected}
+      previousValue={previousValue}
+      attemptCount={attemptCount}
+      justAnswered={justAnswered}
       onSelect={setSelected}
       onSubmit={handleSubmit}
+      onRetry={handleRetry}
       onNext={goNext}
     />
   );

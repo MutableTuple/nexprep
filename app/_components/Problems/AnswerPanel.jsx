@@ -7,8 +7,12 @@ export default function AnswerPanel({
   xp,
   submitted,
   selected,
+  previousValue,
+  attemptCount,
+  justAnswered,
   onSelect,
   onSubmit,
+  onRetry,
   onNext,
 }) {
   const isNumerical = ["NUMERICAL", "INTEGER"].includes(question.questionType);
@@ -20,11 +24,15 @@ export default function AnswerPanel({
         tolerance={question.data?.tolerance ?? 0}
         unit={question.data?.unit}
         submitted={submitted}
+        previousValue={previousValue}
+        attemptCount={attemptCount}
+        justAnswered={justAnswered}
         explanation={question.explanation}
         formula={question.formula}
         solutionSteps={question.solutionSteps}
         xp={xp}
         onSubmit={onSubmit}
+        onRetry={onRetry}
         onNext={onNext}
       />
     );
@@ -44,12 +52,15 @@ export default function AnswerPanel({
       correctIndex={correctIndex}
       selected={selected}
       submitted={submitted}
+      attemptCount={attemptCount}
+      justAnswered={justAnswered}
       explanation={question.explanation}
       formula={question.formula}
       solutionSteps={question.solutionSteps}
       xp={xp}
       onSelect={onSelect}
       onSubmit={onSubmit}
+      onRetry={onRetry}
       onNext={onNext}
     />
   );

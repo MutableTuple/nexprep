@@ -8,12 +8,15 @@ export default function MCQPanel({
   correctIndex,
   selected,
   submitted,
+  attemptCount,
+  justAnswered,
   explanation,
   formula,
   solutionSteps,
   xp,
   onSelect,
   onSubmit,
+  onRetry,
   onNext,
 }) {
   const isCorrect = submitted && selected === correctIndex;
@@ -45,16 +48,20 @@ export default function MCQPanel({
             disabled={selected === null}
             className="w-full py-3.5 rounded-2xl font-bold text-[15px] h-auto"
           >
-            Submit answer
+            {attemptCount > 1
+              ? `Submit (attempt ${attemptCount})`
+              : "Submit answer"}
           </Button>
         </div>
       ) : (
         <ResultBox
           isCorrect={isCorrect}
           xp={xp}
+          justAnswered={justAnswered}
           explanation={explanation}
           formula={formula}
           solutionSteps={solutionSteps}
+          onRetry={onRetry}
           onNext={onNext}
         />
       )}

@@ -2,21 +2,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import React from "react";
 import ResultBox from "./ResultBox";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function NumericalPanel({
   correctValue,
   tolerance = 0,
   unit,
   submitted,
+  previousValue,
+  attemptCount,
+  justAnswered,
   explanation,
   formula,
   solutionSteps,
   xp,
   onSubmit,
+  onRetry,
   onNext,
 }) {
   const [inputValue, setInputValue] = useState("");
+
+  // Sync the input from a restored prior attempt, and clear it again when
+  // the parent resets previousValue to "" (a fresh question, or a retry).
+  useEffect(() => {
+    setInputValue(previousValue || "");
+  }, [previousValue]);
 
   const isCorrect =
     submitted &&
@@ -58,16 +68,20 @@ export default function NumericalPanel({
             disabled={!inputValue}
             className="w-full py-3.5 rounded-2xl font-bold text-[15px] h-auto"
           >
-            Submit answer
+            {attemptCount > 1
+              ? `Submit (attempt ${attemptCount})`
+              : "Submit answer"}
           </Button>
         </div>
       ) : (
         <ResultBox
           isCorrect={isCorrect}
           xp={xp}
+          justAnswered={justAnswered}
           explanation={explanation}
           formula={formula}
           solutionSteps={solutionSteps}
+          onRetry={onRetry}
           onNext={onNext}
         />
       )}

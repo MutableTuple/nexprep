@@ -11,6 +11,7 @@ import {
 import {
   CheckCircle2,
   ChevronRight,
+  RotateCcw,
   SkipForward,
   XCircle,
   BookOpen,
@@ -19,7 +20,7 @@ import MarkdownRenderer from "../../_components/MarkdownRenderer";
 
 // ─── Inline strip ─────────────────────────────────────────────────────────────
 
-function ResultStrip({ isCorrect, xp, onViewExplanation, onNext }) {
+function ResultStrip({ isCorrect, xp, onViewExplanation, onNext, onRetry }) {
   return (
     <div
       className={`mx-4 sm:mx-6 mb-4 sm:mb-6 rounded-2xl border p-4 flex flex-col gap-3 ${
@@ -55,13 +56,24 @@ function ResultStrip({ isCorrect, xp, onViewExplanation, onNext }) {
           <BookOpen size={14} />
           View Solution
         </Button>
-        <Button
-          size="sm"
-          onClick={onNext}
-          className="flex-1 rounded-xl gap-1.5"
-        >
-          Next <ChevronRight size={14} />
-        </Button>
+        {isCorrect ? (
+          <Button
+            size="sm"
+            onClick={onNext}
+            className="flex-1 rounded-xl gap-1.5"
+          >
+            Next <ChevronRight size={14} />
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            onClick={onRetry}
+            className="flex-1 rounded-xl gap-1.5"
+          >
+            <RotateCcw size={14} />
+            Try Again
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -77,11 +89,17 @@ function ExplanationModal({
   explanation,
   formula,
   solutionSteps,
+  onRetry,
   onNext,
 }) {
   function handleNext() {
     onClose();
     onNext();
+  }
+
+  function handleRetry() {
+    onClose();
+    onRetry();
   }
 
   return (
@@ -162,26 +180,41 @@ function ExplanationModal({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-6 sm:px-8 py-4 border-t bg-background shrink-0 flex gap-3">
+        {/* Footer — always a grid, never a single flex row. A flex row that
+            switches on at some breakpoint (e.g. sm:) can still overflow if
+            the dialog's actual width at that breakpoint isn't wide enough
+            for 4 buttons' text, and DialogContent's overflow-hidden clips
+            that instead of wrapping. A fixed 2-column grid can't overflow
+            horizontally at any width. */}
+        <div className="px-6 sm:px-8 py-4 border-t bg-background shrink-0 grid grid-cols-2 gap-2">
           <Button
             variant="outline"
             onClick={onClose}
-            className="rounded-xl h-11 px-6 text-sm"
+            className="rounded-xl h-11 text-sm min-w-0"
           >
             Close
           </Button>
+          {!isCorrect && (
+            <Button
+              variant="outline"
+              onClick={handleRetry}
+              className="rounded-xl h-11 gap-1.5 text-sm min-w-0"
+            >
+              <RotateCcw size={14} />
+              Try Again
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={handleNext}
-            className="flex-1 rounded-xl h-11 gap-1.5 text-sm"
+            className="rounded-xl h-11 gap-1.5 text-sm min-w-0"
           >
             <SkipForward size={14} />
             Skip
           </Button>
           <Button
             onClick={handleNext}
-            className="flex-1 rounded-xl h-11 gap-1.5 text-sm"
+            className="rounded-xl h-11 gap-1.5 text-sm min-w-0"
           >
             Next
             <ChevronRight size={14} />
@@ -197,16 +230,23 @@ function ExplanationModal({
 export default function ResultBox({
   isCorrect,
   xp,
+  justAnswered,
   explanation,
   formula,
   solutionSteps,
+  onRetry,
   onNext,
 }) {
   const [modalOpen, setModalOpen] = useState(false);
 
+  // Only auto-open on a FRESH wrong submit — justAnswered is false when this
+  // state came from loading an already-solved question (revisiting via
+  // Prev/Next, or a page reload). Without that guard, this effect fires any
+  // time isCorrect becomes false for any reason, including just navigating
+  // to a question you already got wrong.
   useEffect(() => {
-    if (!isCorrect) setModalOpen(true);
-  }, [isCorrect]);
+    if (!isCorrect && justAnswered) setModalOpen(true);
+  }, [isCorrect, justAnswered]);
 
   return (
     <>
@@ -215,6 +255,7 @@ export default function ResultBox({
         xp={xp}
         onViewExplanation={() => setModalOpen(true)}
         onNext={onNext}
+        onRetry={onRetry}
       />
 
       <ExplanationModal
@@ -225,6 +266,7 @@ export default function ResultBox({
         explanation={explanation}
         formula={formula}
         solutionSteps={solutionSteps}
+        onRetry={onRetry}
         onNext={onNext}
       />
     </>

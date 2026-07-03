@@ -22,8 +22,11 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
-import LogoutButton from "./LogoutButton";
+import TimeLeftJeeChart from "./TimeLeftJeeChart";
+import NotificationsDropdown from "./NotificationDropdown";
+import ProfileDropdown from "./ProfileDropdown";
 import { useUser } from "../_lib/AuthProvider";
+
 const links = [
   { name: "Problems", href: "/problems" },
   { name: "Leaderboard", href: "/leaderboard" },
@@ -31,6 +34,9 @@ const links = [
   { name: "Blog", href: "/blog" },
 ];
 
+// Purely presentational — has no business knowing about auth state, so it
+// doesn't call useUser() at all. It didn't before this fix either; that was
+// a stray/misplaced hook call left over from editing Navbar.
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -84,9 +90,18 @@ function ThemeToggle() {
   );
 }
 
+// Single source of truth for "what does the auth-dependent slot look like
+// right now" — loading / logged-in / logged-out are three genuinely
+// different states, so this always branches on all three explicitly rather
+// than treating "no user yet" as "logged out" anywhere in this file.
+function AuthSlot({ loading, user, loadingFallback, loggedIn, loggedOut }) {
+  if (loading) return loadingFallback;
+  return user ? loggedIn : loggedOut;
+}
+
 export default function Navbar() {
   const pathname = usePathname();
-  const { user } = useUser();
+  const { user, loading } = useUser();
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
@@ -132,26 +147,49 @@ export default function Navbar() {
         </NavigationMenu>
 
         {/* Desktop right */}
-        <div className="hidden md:flex items-center gap-1">
+        <div className="hidden md:flex items-center gap-2">
           <ThemeToggle />
-          {user ? (
-            <LogoutButton />
-          ) : (
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/login">Log in</Link>
-            </Button>
-          )}
-          <Button size="sm" className="gap-1.5" asChild>
-            <Link href="/signup">
-              Get Started
-              <ArrowRight size={14} />
-            </Link>
-          </Button>
+          <AuthSlot
+            loading={loading}
+            user={user}
+            loadingFallback={
+              <div className="h-8 w-[168px] rounded-lg bg-muted animate-pulse" />
+            }
+            loggedIn={
+              <>
+                <TimeLeftJeeChart />
+                <NotificationsDropdown />
+                <ProfileDropdown user={user} />
+              </>
+            }
+            loggedOut={
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/login">Log in</Link>
+                </Button>
+                <Button size="sm" className="gap-1.5" asChild>
+                  <Link href="/signup">
+                    Get Started
+                    <ArrowRight size={14} />
+                  </Link>
+                </Button>
+              </>
+            }
+          />
         </div>
 
         {/* Mobile right */}
         <div className="flex items-center gap-1 md:hidden">
           <ThemeToggle />
+          <AuthSlot
+            loading={loading}
+            user={user}
+            loadingFallback={
+              <div className="h-9 w-9 rounded-lg bg-muted animate-pulse" />
+            }
+            loggedIn={<NotificationsDropdown />}
+            loggedOut={null}
+          />
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -200,19 +238,38 @@ export default function Navbar() {
               <Separator />
 
               <div className="flex flex-col gap-2 px-4 py-4">
-                {user ? (
-                  <LogoutButton className="w-full gap-1.5 rounded-xl" />
-                ) : (
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link href="/login">Log in</Link>
-                  </Button>
-                )}
-                <Button className="w-full gap-1.5" asChild>
-                  <Link href="/signup">
-                    Get Started
-                    <ArrowRight size={14} />
-                  </Link>
-                </Button>
+                <AuthSlot
+                  loading={loading}
+                  user={user}
+                  loadingFallback={
+                    <div className="h-10 w-full rounded-lg bg-muted animate-pulse" />
+                  }
+                  loggedIn={
+                    <>
+                      <TimeLeftJeeChart />
+                      <div className="flex items-center gap-2">
+                        <ProfileDropdown user={user} />
+                        <span className="text-sm font-medium text-foreground">
+                          {user?.user_metadata?.full_name ||
+                            user?.email?.split("@")[0]}
+                        </span>
+                      </div>
+                    </>
+                  }
+                  loggedOut={
+                    <>
+                      <Button variant="outline" className="w-full" asChild>
+                        <Link href="/login">Log in</Link>
+                      </Button>
+                      <Button className="w-full gap-1.5" asChild>
+                        <Link href="/signup">
+                          Get Started
+                          <ArrowRight size={14} />
+                        </Link>
+                      </Button>
+                    </>
+                  }
+                />
               </div>
             </SheetContent>
           </Sheet>
