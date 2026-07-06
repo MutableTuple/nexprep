@@ -21,6 +21,8 @@ import {
   getProfile,
   updateProfile,
   isUsernameAvailable,
+  getUserStats,
+  getMyRank,
 } from "@/app/_lib/data-service";
 import StatCard from "./Problems/StatCard";
 import ProfileTabs from "./ProfileTabs";
@@ -169,11 +171,11 @@ function mapDbProfileToView(dbProfile, authUser) {
 // Stats grid + tabs never depend on edit-mode state, so this subtree is
 // memoized to skip re-rendering (and skip re-rendering the heatmap inside
 // ProfileTabs) on every keystroke while editing the profile above it.
-const Body = memo(function Body() {
+const Body = memo(function Body({ stats }) {
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-8 py-6 sm:py-8 flex flex-col gap-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {STATS.map((s) => (
+        {stats.map((s) => (
           <StatCard key={s.label} {...s} />
         ))}
       </div>
@@ -188,7 +190,8 @@ export default function UserProfilePage({ onSave }) {
   const [saving, setSaving] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState(null); // null | "checking" | "available" | "taken"
   const fileInputRef = useRef(null);
-
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
   const { user, loading: authLoading } = useUser();
   const [profile, setProfile] = useState(USER);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -199,6 +202,8 @@ export default function UserProfilePage({ onSave }) {
     if (!user) {
       setProfile(USER);
       setProfileLoading(false);
+      setStats(null); // ← add this
+      setStatsLoading(false); // ← add this
       return;
     }
 
@@ -223,7 +228,25 @@ export default function UserProfilePage({ onSave }) {
       }
     }
 
+    // ← add this whole function
+    async function loadStats() {
+      setStatsLoading(true);
+      try {
+        const [userStats, rank] = await Promise.all([
+          getUserStats(user.id),
+          getMyRank(user.id),
+        ]);
+        if (!cancelled) setStats({ ...userStats, rank });
+      } catch (err) {
+        console.error("Failed to load stats:", err);
+        if (!cancelled) setStats(null);
+      } finally {
+        if (!cancelled) setStatsLoading(false);
+      }
+    }
+
     loadProfile();
+    loadStats(); // ← add this line
     return () => {
       cancelled = true;
     };
@@ -326,7 +349,44 @@ export default function UserProfilePage({ onSave }) {
   }
 
   const shown = editMode ? draft : profile;
-
+  const displayStats = [
+    {
+      label: "Current Streak",
+      value: statsLoading ? "…" : user ? `${stats?.streak ?? 0}` : "—",
+      unit: "days",
+      icon: Flame,
+      color: "text-orange-500",
+    },
+    {
+      label: "Total XP",
+      value: statsLoading
+        ? "…"
+        : user
+          ? (stats?.xp ?? 0).toLocaleString()
+          : "—",
+      unit: "xp",
+      icon: Zap,
+      color: "text-yellow-500",
+    },
+    {
+      label: "Problems Solved",
+      value: statsLoading
+        ? "…"
+        : user
+          ? (stats?.solved_questions ?? 0).toLocaleString()
+          : "—",
+      unit: "",
+      icon: Target,
+      color: "text-primary",
+    },
+    {
+      label: "Global Rank",
+      value: statsLoading ? "…" : user && stats?.rank ? `#${stats.rank}` : "—",
+      unit: "",
+      icon: Trophy,
+      color: "text-amber-500",
+    },
+  ];
   if (profileLoading) {
     return (
       <div className="min-h-screen bg-muted/30 flex items-center justify-center">
@@ -383,7 +443,7 @@ export default function UserProfilePage({ onSave }) {
         </div>
       </div>
 
-      <Body />
+      <Body stats={displayStats} />
     </div>
   );
 }

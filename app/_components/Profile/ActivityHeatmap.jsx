@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/tooltip";
 import { Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useUserId } from "@/app/_lib/AuthProvider";
+import { getSolvedDatesSince } from "@/app/_lib/data-service";
 
 const WEEKS = 53;
 const DAYS = WEEKS * 7;
@@ -48,13 +50,26 @@ function levelFor(count) {
   return 5;
 }
 
-function buildCalendar() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+// UTC everywhere here, on purpose — the streak trigger buckets "day" via
+// `at time zone 'utc'`, so the grid has to use the same boundary or a solve
+// near midnight IST could land in a different box than the day the trigger
+// actually credited it to.
+function utcMidnight(d) {
+  return new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+  );
+}
+
+function utcDateKey(d) {
+  return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
+
+function buildCalendar(countsByDate) {
+  const today = utcMidnight(new Date());
 
   const start = new Date(today);
-  start.setDate(start.getDate() - (DAYS - 1));
-  start.setDate(start.getDate() - start.getDay()); // snap back to Sunday
+  start.setUTCDate(start.getUTCDate() - (DAYS - 1));
+  start.setUTCDate(start.getUTCDate() - start.getUTCDay()); // snap back to Sunday
 
   const days = [];
   const cursor = new Date(start);
@@ -63,13 +78,9 @@ function buildCalendar() {
     const isFuture = cursor > today;
     days.push({
       date: new Date(cursor),
-      count: isFuture
-        ? -1
-        : Math.random() > 0.55
-          ? Math.floor(Math.random() * 9)
-          : 0,
+      count: isFuture ? -1 : (countsByDate.get(utcDateKey(cursor)) ?? 0),
     });
-    cursor.setDate(cursor.getDate() + 1);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return days;
 }
@@ -79,11 +90,54 @@ function formatDate(date) {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
 function ActivityHeatmap() {
-  const days = useMemo(() => buildCalendar(), []);
+  const { userId, loading: authLoading } = useUserId();
+  const [countsByDate, setCountsByDate] = useState(new Map());
+  const [dataLoading, setDataLoading] = useState(true);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!userId) {
+      setCountsByDate(new Map());
+      setDataLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setDataLoading(true);
+
+    const since = new Date();
+    since.setUTCDate(since.getUTCDate() - DAYS);
+
+    getSolvedDatesSince(userId, since)
+      .then((rows) => {
+        if (cancelled) return;
+        const map = new Map();
+        for (const row of rows) {
+          const key = row.solved_at.slice(0, 10); // UTC date prefix of the ISO timestamp
+          map.set(key, (map.get(key) ?? 0) + 1);
+        }
+        setCountsByDate(map);
+      })
+      .catch((err) => {
+        console.error("Failed to load activity data:", err);
+        if (!cancelled) setCountsByDate(new Map());
+      })
+      .finally(() => {
+        if (!cancelled) setDataLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, authLoading]);
+
+  const days = useMemo(() => buildCalendar(countsByDate), [countsByDate]);
 
   const monthMarkers = useMemo(() => {
     const markers = [];
@@ -91,7 +145,7 @@ function ActivityHeatmap() {
     for (let w = 0; w < WEEKS; w++) {
       const firstDay = days[w * 7]?.date;
       if (!firstDay) continue;
-      const month = firstDay.getMonth();
+      const month = firstDay.getUTCMonth();
       if (month !== prevMonth) {
         markers.push({ index: w, label: MONTH_LABELS[month] });
         prevMonth = month;
@@ -105,6 +159,8 @@ function ActivityHeatmap() {
     [days],
   );
 
+  const isLoading = authLoading || dataLoading;
+
   return (
     <Card className="bg-card border-border shadow-none rounded-2xl">
       <CardHeader className="px-6 pt-6 pb-4">
@@ -115,7 +171,7 @@ function ActivityHeatmap() {
           </div>
           <span className="text-xs text-muted-foreground">
             <span className="text-foreground font-medium tabular-nums">
-              {totalCount}
+              {isLoading ? "…" : totalCount}
             </span>{" "}
             problems &middot; last year
           </span>
@@ -123,85 +179,95 @@ function ActivityHeatmap() {
       </CardHeader>
       <Separator />
       <CardContent className="px-6 py-5">
-        <TooltipProvider delayDuration={100}>
-          <div className="w-full">
-            <div
-              className="grid mb-1 ml-8 gap-[3px]"
-              style={{
-                gridTemplateColumns: `repeat(${WEEKS}, minmax(0, 1fr))`,
-              }}
-            >
-              {Array.from({ length: WEEKS }).map((_, wi) => {
-                const marker = monthMarkers.find((m) => m.index === wi);
-                return (
-                  <span
-                    key={wi}
-                    className="text-[10px] text-muted-foreground leading-none whitespace-nowrap"
+        {!isLoading && !userId ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            Sign in to track your daily activity.
+          </p>
+        ) : (
+          <>
+            <TooltipProvider delayDuration={100}>
+              <div className="w-full">
+                <div
+                  className="grid mb-1 ml-8 gap-[3px]"
+                  style={{
+                    gridTemplateColumns: `repeat(${WEEKS}, minmax(0, 1fr))`,
+                  }}
+                >
+                  {Array.from({ length: WEEKS }).map((_, wi) => {
+                    const marker = monthMarkers.find((m) => m.index === wi);
+                    return (
+                      <span
+                        key={wi}
+                        className="text-[10px] text-muted-foreground leading-none whitespace-nowrap"
+                      >
+                        {marker?.label ?? ""}
+                      </span>
+                    );
+                  })}
+                </div>
+
+                <div className="flex gap-2">
+                  <div className="flex flex-col justify-between shrink-0 w-6 py-[1px]">
+                    {DAY_LABELS.map((d, i) => (
+                      <span
+                        key={i}
+                        className="text-[10px] text-muted-foreground leading-none"
+                      >
+                        {d}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div
+                    className="flex-1 grid gap-[3px]"
+                    style={{
+                      gridTemplateRows: "repeat(7, minmax(0, 1fr))",
+                      gridAutoFlow: "column",
+                      gridAutoColumns: "minmax(0, 1fr)",
+                    }}
                   >
-                    {marker?.label ?? ""}
-                  </span>
-                );
-              })}
-            </div>
-
-            <div className="flex gap-2">
-              <div className="flex flex-col justify-between shrink-0 w-6 py-[1px]">
-                {DAY_LABELS.map((d, i) => (
-                  <span
-                    key={i}
-                    className="text-[10px] text-muted-foreground leading-none"
-                  >
-                    {d}
-                  </span>
-                ))}
+                    {days.map((day, i) => {
+                      if (day.count < 0) {
+                        return <div key={i} className="w-full aspect-square" />;
+                      }
+                      const level = levelFor(day.count);
+                      return (
+                        <Tooltip key={i}>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={cn(
+                                "w-full aspect-square rounded-[2px] hover:ring-1 hover:ring-foreground/40",
+                                isLoading
+                                  ? "bg-muted animate-pulse"
+                                  : HEAT_LEVELS[level],
+                              )}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-xs">
+                            <span className="font-medium">
+                              {day.count === 0
+                                ? "No problems"
+                                : `${day.count} problems`}
+                            </span>{" "}
+                            on {formatDate(day.date)}
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
+            </TooltipProvider>
 
-              <div
-                className="flex-1 grid gap-[3px]"
-                style={{
-                  gridTemplateRows: "repeat(7, minmax(0, 1fr))",
-                  gridAutoFlow: "column",
-                  gridAutoColumns: "minmax(0, 1fr)",
-                }}
-              >
-                {days.map((day, i) => {
-                  if (day.count < 0) {
-                    return <div key={i} className="w-full aspect-square" />;
-                  }
-                  const level = levelFor(day.count);
-                  return (
-                    <Tooltip key={i}>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={cn(
-                            "w-full aspect-square rounded-[2px] hover:ring-1 hover:ring-foreground/40",
-                            HEAT_LEVELS[level],
-                          )}
-                        />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="text-xs">
-                        <span className="font-medium">
-                          {day.count === 0
-                            ? "No problems"
-                            : `${day.count} problems`}
-                        </span>{" "}
-                        on {formatDate(day.date)}
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                })}
-              </div>
+            <div className="flex items-center gap-1.5 mt-4 justify-end">
+              <span className="text-[11px] text-muted-foreground">Less</span>
+              {HEAT_LEVELS.map((c, i) => (
+                <div key={i} className={cn("w-3 h-3 rounded-[2px]", c)} />
+              ))}
+              <span className="text-[11px] text-muted-foreground">More</span>
             </div>
-          </div>
-        </TooltipProvider>
-
-        <div className="flex items-center gap-1.5 mt-4 justify-end">
-          <span className="text-[11px] text-muted-foreground">Less</span>
-          {HEAT_LEVELS.map((c, i) => (
-            <div key={i} className={cn("w-3 h-3 rounded-[2px]", c)} />
-          ))}
-          <span className="text-[11px] text-muted-foreground">More</span>
-        </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

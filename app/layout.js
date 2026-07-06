@@ -11,12 +11,19 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 import { AuthProvider } from "./_lib/AuthProvider";
+import { createClient } from "./_lib/supabase-server";
+
 export const metadata = {
   title: "JEE Platform",
   description: "India's most gamified JEE preparation platform",
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <html
       lang="en"
@@ -24,7 +31,7 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-background font-sans text-foreground">
-        <AuthProvider>
+        <AuthProvider initialUser={user}>
           <Providers>
             {children} <MainToast />
           </Providers>

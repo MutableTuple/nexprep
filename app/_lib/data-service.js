@@ -718,16 +718,16 @@ export async function deleteUserStats(userId) {
   );
 }
 
-export async function getLeaderboard(limit = 50) {
-  return handle(
-    await supabase
-      .from("user_stats")
-      .select("*, profiles(username, display_name, avatar_url)")
-      .order("xp", { ascending: false })
-      .limit(limit),
-  );
-}
-//
+// export async function getLeaderboard(limit = 50) {
+//   return handle(
+//     await supabase
+//       .from("user_stats")
+//       .select("*, profiles(username, display_name, avatar_url)")
+//       .order("xp", { ascending: false })
+//       .limit(limit),
+//   );
+// }
+// //
 
 export async function getLastSolveDate(userId) {
   const { data, error } = await supabase
@@ -766,6 +766,52 @@ export async function createPersonalGoal(
     })
     .select()
     .single();
+  if (error) throw error;
+  return data;
+}
+export async function getSolvedDatesSince(userId, sinceDate) {
+  const { data, error } = await supabase
+    .from("solved_questions")
+    .select("solved_at")
+    .eq("user_id", userId)
+    .gte("solved_at", sinceDate.toISOString())
+    .order("solved_at", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function getMyRank(userId) {
+  const { data: me, error: meErr } = await supabase
+    .from("user_stats")
+    .select("xp")
+    .eq("user_id", userId)
+    .single();
+  if (meErr) throw meErr;
+
+  const { count, error } = await supabase
+    .from("user_stats")
+    .select("*", { count: "exact", head: true })
+    .gt("xp", me.xp);
+  if (error) throw error;
+
+  return count + 1;
+}
+
+export async function getLeaderboard(limit = 100) {
+  const { data, error } = await supabase
+    .from("user_stats")
+    .select("*, profiles(username, display_name, avatar_url)")
+    .order("xp", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data;
+}
+
+export async function getPeriodLeaderboard(sinceDate, limit = 100) {
+  const { data, error } = await supabase.rpc("get_leaderboard_for_period", {
+    since: sinceDate.toISOString(),
+    result_limit: limit,
+  });
   if (error) throw error;
   return data;
 }

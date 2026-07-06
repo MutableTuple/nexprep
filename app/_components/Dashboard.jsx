@@ -457,8 +457,6 @@ export function UpcomingContest() {
 export default function Dashboard() {
   return (
     <div className="min-h-screen bg-muted/30 flex flex-col font-sans">
-      <Topbar />
-
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 

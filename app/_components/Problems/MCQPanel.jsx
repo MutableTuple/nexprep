@@ -2,7 +2,7 @@ import React from "react";
 import AnswerOption from "./AnswerOption";
 import { Button } from "@/components/ui/button";
 import ResultBox from "./ResultBox";
-
+import MarkdownRenderer from "../MarkdownRenderer";
 export default function MCQPanel({
   options,
   correctIndex,

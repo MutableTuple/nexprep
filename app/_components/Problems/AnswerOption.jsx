@@ -1,5 +1,6 @@
 import { CheckCircle2, XCircle } from "lucide-react";
 import React from "react";
+import MarkdownRenderer from "../MarkdownRenderer";
 
 export default function AnswerOption({
   opt,
@@ -42,7 +43,11 @@ export default function AnswerOption({
       >
         {opt.label}
       </div>
-      <span className="text-sm font-medium flex-1">{opt.text}</span>
+      <div className="text-sm font-medium flex-1">
+        <MarkdownRenderer className="prose-p:my-0 prose-p:leading-normal prose-p:font-medium prose-p:text-inherit prose-strong:text-inherit">
+          {opt.text}
+        </MarkdownRenderer>
+      </div>
       {isRight && (
         <CheckCircle2 size={18} className="text-green-500 shrink-0" />
       )}
