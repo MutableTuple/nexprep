@@ -34,7 +34,6 @@ const links = [
   { name: "Blog", href: "/blog" },
 ];
 
-
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -112,7 +111,7 @@ export default function Navbar() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Brain size={16} />
           </div>
-          <span className="text-base tracking-tight">Cod&#233;dex</span>
+          <span className="text-base tracking-tight">rankgrind.com</span>
           <Badge
             variant="secondary"
             className="text-[10px] px-1.5 py-0 h-4 font-semibold hidden sm:inline-flex"

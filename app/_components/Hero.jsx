@@ -5,7 +5,7 @@ import { ArrowRight, Flame, Star, Users, Zap, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
 
 const stats = [
   { icon: Users, label: "Active Students", value: "18K+" },
@@ -67,13 +67,15 @@ export default function Hero() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 w-full sm:w-auto"
         >
-          <Button
-            size="lg"
-            className="rounded-full px-8 gap-2 h-12 text-base w-full sm:w-auto"
-          >
-            Start Practicing
-            <ArrowRight size={16} />
-          </Button>
+          <Link href={"/problems"}>
+            <Button
+              size="lg"
+              className="rounded-full px-8 gap-2 h-12 text-base w-full sm:w-auto cursor-pointer"
+            >
+              Start Practicing
+              <ArrowRight size={16} />
+            </Button>
+          </Link>
           <Button
             variant="outline"
             size="lg"

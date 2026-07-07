@@ -54,7 +54,7 @@ export async function getQuestions({
   difficulties = [],
   search = "",
   page = 1,
-  limit = 50,
+  limit = 25,
 } = {}) {
   let query = supabase
     .from("questions")
@@ -82,7 +82,6 @@ export async function getQuestions({
   if (error) throw error;
   return (data ?? []).map(mapQuestion);
 }
-
 export async function getQuestionById(id) {
   const { data, error } = await supabase
     .from("questions")
