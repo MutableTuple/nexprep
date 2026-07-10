@@ -1,5 +1,6 @@
 // app/layout.jsx
 import { Space_Grotesk } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import Footer from "./_components/Footer";
@@ -20,6 +21,8 @@ const SITE_TITLE =
   "rankgrind.com — India's Most Gamified JEE Preparation Platform";
 const SITE_DESCRIPTION =
   "Prepare for JEE Main & Advanced with AI-powered practice questions, chapter-wise tests, previous year papers, mock tests, and gamified XP & streak tracking.";
+
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
@@ -140,6 +143,7 @@ export default async function RootLayout({ children }) {
         </AuthProvider>
         <Footer />
       </body>
+      {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
     </html>
   );
 }
