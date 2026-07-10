@@ -33,11 +33,11 @@ import { Badge } from "@/components/ui/badge";
 const studyLinks = [
   { name: "Physics", href: "/physics" },
   { name: "Chemistry", href: "/chemistry" },
-  { name: "Mathematics", href: "/mathematics" },
-  { name: "NCERT Notes", href: "/ncert-notes" },
-  { name: "Formula Sheets", href: "/formula-sheets" },
-  { name: "Concept Maps", href: "/concept-maps" },
-  { name: "Revision Notes", href: "/revision-notes" },
+  { name: "Maths", href: "/maths" },
+  // { name: "NCERT Notes", href: "/ncert-notes" },
+  // { name: "Formula Sheets", href: "/formula-sheets" },
+  // { name: "Concept Maps", href: "/concept-maps" },
+  // { name: "Revision Notes", href: "/revision-notes" },
 ];
 
 const examLinks = [
@@ -221,7 +221,7 @@ export default function Footer() {
     name: "Codédex",
     description:
       "India's next generation AI learning platform for JEE Main & Advanced aspirants.",
-    url: "https://codedex.in",
+    url: "https://rankgrind.com",
     sameAs: [
       "https://youtube.com/@codedex",
       "https://instagram.com/codedex",
@@ -268,13 +268,8 @@ export default function Footer() {
                 className="mb-6 sm:mb-8 flex items-center gap-3"
                 aria-label="Codédex home"
               >
-                <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-white text-black shrink-0">
-                  <Brain size={24} aria-hidden="true" />
-                </div>
                 <div>
-                  <p className="text-xl sm:text-2xl font-bold leading-none">
-                    Cod&#233;dex
-                  </p>
+                  <img src={"/logo-dark.png"} />
                   <p className="text-xs sm:text-sm text-zinc-400 mt-1">
                     Learn. Practice. Master.
                   </p>

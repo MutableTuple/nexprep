@@ -814,3 +814,36 @@ export async function getPeriodLeaderboard(sinceDate, limit = 100) {
   if (error) throw error;
   return data;
 }
+export async function getQuestionsPaged({
+  subject,
+  difficulties = [],
+  search = "",
+  page = 1,
+  limit = 25,
+} = {}) {
+  let query = supabase
+    .from("questions")
+    .select(SELECT_LIST, { count: "exact" })
+    .eq("status", "published")
+    .order("created_at", { ascending: false })
+    .range((page - 1) * limit, page * limit - 1);
+
+  if (subject && subject !== "All") {
+    query = query.eq("subject", subject);
+  }
+
+  if (difficulties.length > 0) {
+    query = query.in("difficulty", difficulties);
+  }
+
+  if (search.trim()) {
+    query = query.textSearch("search_text", search.trim(), {
+      type: "websearch",
+      config: "english",
+    });
+  }
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+  return { questions: (data ?? []).map(mapQuestion), count: count ?? 0 };
+}

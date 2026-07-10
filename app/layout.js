@@ -14,9 +14,103 @@ import { AuthProvider } from "./_lib/AuthProvider";
 import { createClient } from "./_lib/supabase-server";
 import Navbar from "./_components/Navbar";
 
+const SITE_URL = "https://rankgrind.com";
+const SITE_NAME = "rankgrind.com";
+const SITE_TITLE =
+  "rankgrind.com — India's Most Gamified JEE Preparation Platform";
+const SITE_DESCRIPTION =
+  "Prepare for JEE Main & Advanced with AI-powered practice questions, chapter-wise tests, previous year papers, mock tests, and gamified XP & streak tracking.";
+
 export const metadata = {
-  title: "JEE Platform",
-  description: "India's most gamified JEE preparation platform",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_TITLE,
+    template: "%s | rankgrind.com",
+  },
+  description: SITE_DESCRIPTION,
+  keywords: [
+    "JEE Main",
+    "JEE Advanced",
+    "JEE preparation",
+    "JEE Physics questions",
+    "JEE Chemistry questions",
+    "JEE Maths questions",
+    "JEE mock test",
+    "IIT JEE practice",
+    "JEE question bank",
+    "JEE previous year papers",
+  ],
+  authors: [{ name: "rankgrind.com" }],
+  creator: "rankgrind.com",
+  publisher: "rankgrind.com",
+  category: "education",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "rankgrind.com — JEE Preparation Platform",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
+  manifest: "/site.webmanifest",
+  verification: {
+    google: "your-google-search-console-verification-code",
+  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+};
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: SITE_DESCRIPTION,
+  potentialAction: {
+    "@type": "SearchAction",
+    target: `${SITE_URL}/problems?search={search_term_string}`,
+    "query-input": "required name=search_term_string",
+  },
 };
 
 export default async function RootLayout({ children }) {
@@ -31,6 +125,12 @@ export default async function RootLayout({ children }) {
       className={`${spaceGrotesk.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+      </head>
       <body className="min-h-screen bg-background font-sans text-foreground">
         <AuthProvider initialUser={user}>
           <Providers>
@@ -38,6 +138,7 @@ export default async function RootLayout({ children }) {
             {children} <MainToast />
           </Providers>
         </AuthProvider>
+        <Footer />
       </body>
     </html>
   );
