@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { showToast } from "@/app/_lib/toast";
 import {
   getProfile,
+  getProfileByUsername,
   updateProfile,
   isUsernameAvailable,
   getUserStats,
@@ -28,48 +29,6 @@ import StatCard from "./Problems/StatCard";
 import ProfileTabs from "./ProfileTabs";
 import ProfileInfo from "./Profile/ProfileInfo";
 import { useUser } from "@/app/_lib/AuthProvider";
-
-const USER = {
-  name: "Arjun Sharma",
-  username: "@arjunsharma",
-  avatar: "",
-  location: "Delhi, India",
-  joinedYear: "2024",
-  bio: "JEE 2026 aspirant. Physics enthusiast. Aiming for IIT Bombay CSE.",
-  target: "IIT Bombay — CSE",
-  examYear: "",
-};
-
-const STATS = [
-  {
-    label: "Current Streak",
-    value: "18",
-    unit: "days",
-    icon: Flame,
-    color: "text-orange-500",
-  },
-  {
-    label: "Total XP",
-    value: "18,420",
-    unit: "xp",
-    icon: Zap,
-    color: "text-yellow-500",
-  },
-  {
-    label: "Problems Solved",
-    value: "1,248",
-    unit: "",
-    icon: Target,
-    color: "text-primary",
-  },
-  {
-    label: "Global Rank",
-    value: "#342",
-    unit: "",
-    icon: Trophy,
-    color: "text-amber-500",
-  },
-];
 
 const BADGES = [
   {
@@ -146,8 +105,18 @@ const BADGES = [
   },
 ];
 
+const EMPTY_PROFILE = {
+  name: "Anonymous",
+  username: "@user",
+  avatar: "",
+  bio: "",
+  target: "",
+  examYear: "",
+  location: "",
+};
+
 function getInitials(name) {
-  return name
+  return (name || "?")
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -165,12 +134,10 @@ function mapDbProfileToView(dbProfile, authUser) {
     target: dbProfile?.exam || "",
     examYear: dbProfile?.target_year ?? "",
     location: dbProfile?.country || "",
+    id: dbProfile?.id || null,
   };
 }
 
-// Stats grid + tabs never depend on edit-mode state, so this subtree is
-// memoized to skip re-rendering (and skip re-rendering the heatmap inside
-// ProfileTabs) on every keystroke while editing the profile above it.
 const Body = memo(function Body({ stats }) {
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-8 py-6 sm:py-8 flex flex-col gap-6">
@@ -184,81 +151,99 @@ const Body = memo(function Body({ stats }) {
   );
 });
 
-export default function UserProfilePage({ onSave }) {
-  const [editMode, setEditMode] = useState(false);
-  const [draft, setDraft] = useState(USER);
-  const [saving, setSaving] = useState(false);
-  const [usernameStatus, setUsernameStatus] = useState(null); // null | "checking" | "available" | "taken"
-  const fileInputRef = useRef(null);
+// username prop → viewing someone else's profile (usually)
+// no username prop → viewing own profile
+// either way, "isOwn" is decided by comparing the loaded profile's id to the logged-in user's id
+export default function UserProfilePage({ username: targetUsername, onSave }) {
+  const { user, loading: authLoading } = useUser();
+
+  const [profile, setProfile] = useState(EMPTY_PROFILE);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
-  const { user, loading: authLoading } = useUser();
-  const [profile, setProfile] = useState(USER);
-  const [profileLoading, setProfileLoading] = useState(true);
+
+  const [editMode, setEditMode] = useState(false);
+  const [draft, setDraft] = useState(EMPTY_PROFILE);
+  const [saving, setSaving] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // ownership is based on the loaded profile's id, not on whether a username was in the URL
+  const isOwn = !!user && !!profile.id && profile.id === user.id;
 
   useEffect(() => {
     if (authLoading) return;
 
-    if (!user) {
-      setProfile(USER);
-      setProfileLoading(false);
-      setStats(null); // ← add this
-      setStatsLoading(false); // ← add this
-      return;
-    }
-
     let cancelled = false;
+    setProfileLoading(true);
+    setStatsLoading(true);
 
-    async function loadProfile() {
-      setProfileLoading(true);
+    async function load() {
       try {
-        const dbProfile = await getProfile(user.id);
+        let dbProfile;
+
+        if (targetUsername) {
+          // fetch by username from the URL
+          dbProfile = await getProfileByUsername(targetUsername);
+          if (!dbProfile) {
+            // username doesn't exist
+            setProfile({ ...EMPTY_PROFILE, name: "User not found" });
+            setProfileLoading(false);
+            setStatsLoading(false);
+            return;
+          }
+        } else {
+          if (!user) {
+            setProfile(EMPTY_PROFILE);
+            setStats(null);
+            setProfileLoading(false);
+            setStatsLoading(false);
+            return;
+          }
+          dbProfile = await getProfile(user.id);
+        }
+
         if (!cancelled) setProfile(mapDbProfileToView(dbProfile, user));
+
+        // load stats for whoever owns this profile
+        const profileUserId = dbProfile?.id;
+        if (profileUserId) {
+          try {
+            const [userStats, rank] = await Promise.all([
+              getUserStats(profileUserId),
+              getMyRank(profileUserId),
+            ]);
+            if (!cancelled) setStats({ ...userStats, rank });
+          } catch {
+            if (!cancelled) setStats(null);
+          }
+        }
       } catch (err) {
         console.error("Failed to load profile:", err);
         if (!cancelled) {
-          showToast.error(
-            "Couldn't load profile",
-            "Showing basic info instead.",
-          );
-          setProfile(mapDbProfileToView(null, user));
+          showToast.error("Couldn't load profile", "");
+          setProfile(EMPTY_PROFILE);
+          setStats(null);
         }
       } finally {
-        if (!cancelled) setProfileLoading(false);
+        if (!cancelled) {
+          setProfileLoading(false);
+          setStatsLoading(false);
+        }
       }
     }
 
-    // ← add this whole function
-    async function loadStats() {
-      setStatsLoading(true);
-      try {
-        const [userStats, rank] = await Promise.all([
-          getUserStats(user.id),
-          getMyRank(user.id),
-        ]);
-        if (!cancelled) setStats({ ...userStats, rank });
-      } catch (err) {
-        console.error("Failed to load stats:", err);
-        if (!cancelled) setStats(null);
-      } finally {
-        if (!cancelled) setStatsLoading(false);
-      }
-    }
-
-    loadProfile();
-    loadStats(); // ← add this line
+    load();
     return () => {
       cancelled = true;
     };
-  }, [user?.id, authLoading]);
+  }, [targetUsername, user?.id, authLoading]);
 
-  // debounced username availability check while editing
+  // debounced username check (own profile edit only)
   useEffect(() => {
-    if (!editMode) return;
-
+    if (!editMode || !isOwn) return;
     const cleaned = draft.username.replace(/^@/, "").trim();
     const original = profile.username.replace(/^@/, "").trim();
-
     if (!cleaned || cleaned === original) {
       setUsernameStatus(null);
       return;
@@ -266,33 +251,28 @@ export default function UserProfilePage({ onSave }) {
 
     let cancelled = false;
     setUsernameStatus("checking");
-
-    const timeout = setTimeout(async () => {
+    const t = setTimeout(async () => {
       try {
         const available = await isUsernameAvailable(cleaned, user?.id);
         if (!cancelled) setUsernameStatus(available ? "available" : "taken");
-      } catch (err) {
-        console.error("Username check failed:", err);
+      } catch {
         if (!cancelled) setUsernameStatus(null);
       }
     }, 500);
-
     return () => {
       cancelled = true;
-      clearTimeout(timeout);
+      clearTimeout(t);
     };
-  }, [draft.username, editMode, profile.username, user?.id]);
+  }, [draft.username, editMode, profile.username, user?.id, isOwn]);
 
   function updateDraft(field, value) {
     setDraft((d) => ({ ...d, [field]: value }));
   }
-
   function enterEdit() {
     setDraft(profile);
     setUsernameStatus(null);
     setEditMode(true);
   }
-
   function cancelEdit() {
     setUsernameStatus(null);
     setEditMode(false);
@@ -300,13 +280,12 @@ export default function UserProfilePage({ onSave }) {
 
   async function saveEdit() {
     if (!user) return;
-
     if (usernameStatus === "taken") {
-      showToast.error("Username taken", "Please choose a different username.");
+      showToast.error("Username taken", "");
       return;
     }
     if (usernameStatus === "checking") {
-      showToast.error("Hang on", "Still checking username availability.");
+      showToast.error("Hang on", "Still checking.");
       return;
     }
 
@@ -322,18 +301,14 @@ export default function UserProfilePage({ onSave }) {
 
     setSaving(true);
     try {
-      const updatedDbProfile = await updateProfile(user.id, updates);
-      setProfile(mapDbProfileToView(updatedDbProfile, user));
+      const updated = await updateProfile(user.id, updates);
+      setProfile(mapDbProfileToView(updated, user));
       setEditMode(false);
       setUsernameStatus(null);
       showToast.success("Profile updated", "Your changes have been saved.");
-      onSave?.(updatedDbProfile);
+      onSave?.(updated);
     } catch (err) {
-      console.error("Failed to update profile:", err);
-      showToast.error(
-        "Couldn't save changes",
-        err.message || "Please try again.",
-      );
+      showToast.error("Couldn't save", err.message || "Please try again.");
     } finally {
       setSaving(false);
     }
@@ -349,21 +324,18 @@ export default function UserProfilePage({ onSave }) {
   }
 
   const shown = editMode ? draft : profile;
+
   const displayStats = [
     {
       label: "Current Streak",
-      value: statsLoading ? "…" : user ? `${stats?.streak ?? 0}` : "—",
+      value: statsLoading ? "…" : `${stats?.streak ?? 0}`,
       unit: "days",
       icon: Flame,
       color: "text-orange-500",
     },
     {
       label: "Total XP",
-      value: statsLoading
-        ? "…"
-        : user
-          ? (stats?.xp ?? 0).toLocaleString()
-          : "—",
+      value: statsLoading ? "…" : (stats?.xp ?? 0).toLocaleString(),
       unit: "xp",
       icon: Zap,
       color: "text-yellow-500",
@@ -372,21 +344,20 @@ export default function UserProfilePage({ onSave }) {
       label: "Problems Solved",
       value: statsLoading
         ? "…"
-        : user
-          ? (stats?.solved_questions ?? 0).toLocaleString()
-          : "—",
+        : (stats?.solved_questions ?? 0).toLocaleString(),
       unit: "",
       icon: Target,
       color: "text-primary",
     },
     {
       label: "Global Rank",
-      value: statsLoading ? "…" : user && stats?.rank ? `#${stats.rank}` : "—",
+      value: statsLoading ? "…" : stats?.rank ? `#${stats.rank}` : "—",
       unit: "",
       icon: Trophy,
       color: "text-amber-500",
     },
   ];
+
   if (profileLoading) {
     return (
       <div className="min-h-screen bg-muted/30 flex items-center justify-center">
@@ -407,34 +378,39 @@ export default function UserProfilePage({ onSave }) {
                   {getInitials(shown.name || "?")}
                 </AvatarFallback>
               </Avatar>
-              <button
-                type="button"
-                onClick={() => editMode && fileInputRef.current?.click()}
-                className={cn(
-                  "absolute bottom-0 right-0 w-7 h-7 rounded-full bg-background border border-border flex items-center justify-center shadow-sm transition-colors",
-                  editMode
-                    ? "hover:bg-muted cursor-pointer"
-                    : "opacity-50 cursor-not-allowed",
-                )}
-              >
-                <Camera size={13} className="text-muted-foreground" />
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleAvatarPick}
-              />
+              {isOwn && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => editMode && fileInputRef.current?.click()}
+                    className={cn(
+                      "absolute bottom-0 right-0 w-7 h-7 rounded-full bg-background border border-border flex items-center justify-center shadow-sm transition-colors",
+                      editMode
+                        ? "hover:bg-muted cursor-pointer"
+                        : "opacity-50 cursor-not-allowed",
+                    )}
+                  >
+                    <Camera size={13} className="text-muted-foreground" />
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarPick}
+                  />
+                </>
+              )}
             </div>
 
             <ProfileInfo
-              editMode={editMode}
+              editMode={isOwn && editMode}
+              canEdit={isOwn}
               draft={draft}
               profile={profile}
-              enterEdit={enterEdit}
-              saveEdit={saveEdit}
-              cancelEdit={cancelEdit}
+              enterEdit={isOwn ? enterEdit : undefined}
+              saveEdit={isOwn ? saveEdit : undefined}
+              cancelEdit={isOwn ? cancelEdit : undefined}
               updateDraft={updateDraft}
               saving={saving}
               usernameStatus={usernameStatus}

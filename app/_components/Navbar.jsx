@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Brain, ArrowRight, Sun, Moon } from "lucide-react";
+import { Menu, ArrowRight, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,22 @@ const links = [
   { name: "Mock Tests", href: "/mock-tests" },
   { name: "Blog", href: "/blog" },
 ];
+
+function NavLogo() {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  // default to dark logo until mounted to avoid a hydration mismatch/flash
+  const src =
+    !mounted || resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-white.png";
+
+  return (
+    <div className="flex  items-center justify-center rounded-lg text-primary-foreground">
+      <img src={src} className="w-14" alt="rankgrind.com logo" />
+    </div>
+  );
+}
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -108,9 +124,7 @@ export default function Navbar() {
           href="/"
           className="flex items-center gap-2.5 font-bold text-foreground hover:opacity-80 transition-opacity shrink-0"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Brain size={16} />
-          </div>
+          <NavLogo />
           <span className="text-base tracking-tight">rankgrind.com</span>
           <Badge
             variant="secondary"
@@ -205,10 +219,10 @@ export default function Navbar() {
                     href="/"
                     className="flex items-center gap-2.5 font-bold text-foreground w-fit"
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                      <Brain size={16} />
-                    </div>
-                    Cod&#233;dex
+                    <NavLogo />
+                    <span className="text-base tracking-tight">
+                      rankgrind.com
+                    </span>
                   </Link>
                 </SheetTitle>
               </SheetHeader>

@@ -26,7 +26,7 @@ function getInitials(name) {
 
 export default function ProfileDropdown({ user }) {
   const router = useRouter();
-  const { profile } = useProfile();
+  const { profile, loading } = useProfile();
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -35,6 +35,15 @@ export default function ProfileDropdown({ user }) {
   }
 
   if (!user) return null;
+
+  if (loading || !profile) {
+    return (
+      <div
+        className="h-8 w-8 rounded-full border-2 border-muted-foreground/30 border-t-foreground animate-spin"
+        aria-label="Loading profile"
+      />
+    );
+  }
 
   const displayName =
     profile?.full_name ||
@@ -61,10 +70,15 @@ export default function ProfileDropdown({ user }) {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56 rounded-xl">
-        <DropdownMenuLabel className="truncate">{displayName}</DropdownMenuLabel>
+        <DropdownMenuLabel className="truncate">
+          {displayName}
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href={`/user/${user.id}/profile`} className="cursor-pointer gap-2">
+          <Link
+            href={`/user/${profile.username}/profile`}
+            className="cursor-pointer gap-2"
+          >
             <UserIcon size={14} />
             My Profile
           </Link>

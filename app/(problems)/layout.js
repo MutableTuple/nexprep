@@ -7,7 +7,6 @@ import ProblemScreen from "../_components/Problems/ProblemScreen";
 export default function layout({ children }) {
   return (
     <>
-      <Navbar />
       {children}
       <Footer />
     </>

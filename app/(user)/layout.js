@@ -39,7 +39,6 @@ export const metadata = {
 export default function layout({ children }) {
   return (
     <div>
-      <Navbar />
       {children}
     </div>
   );

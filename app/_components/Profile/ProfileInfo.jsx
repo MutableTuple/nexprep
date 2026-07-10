@@ -42,6 +42,7 @@ const YEAR_OPTIONS = Array.from(
 
 export default function ProfileInfo({
   editMode,
+  canEdit,
   draft,
   profile,
   enterEdit,
@@ -197,49 +198,51 @@ export default function ProfileInfo({
           )}
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {editMode ? (
-            <>
-              <Button
-                size="sm"
-                onClick={saveEdit}
-                disabled={
-                  saving ||
-                  usernameStatus === "checking" ||
-                  usernameStatus === "taken"
-                }
-                className="gap-1.5 rounded-xl"
-              >
-                {saving ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Check size={14} />
-                )}
-                Save
-              </Button>
+        {canEdit && (
+          <div className="flex items-center gap-2 shrink-0">
+            {editMode ? (
+              <>
+                <Button
+                  size="sm"
+                  onClick={saveEdit}
+                  disabled={
+                    saving ||
+                    usernameStatus === "checking" ||
+                    usernameStatus === "taken"
+                  }
+                  className="gap-1.5 rounded-xl"
+                >
+                  {saving ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Check size={14} />
+                  )}
+                  Save
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={cancelEdit}
+                  disabled={saving}
+                  className="gap-1.5 rounded-xl"
+                >
+                  <X size={14} />
+                  Cancel
+                </Button>
+              </>
+            ) : (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={cancelEdit}
-                disabled={saving}
+                onClick={enterEdit}
                 className="gap-1.5 rounded-xl"
               >
-                <X size={14} />
-                Cancel
+                <Edit3 size={14} />
+                Edit Profile
               </Button>
-            </>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={enterEdit}
-              className="gap-1.5 rounded-xl"
-            >
-              <Edit3 size={14} />
-              Edit Profile
-            </Button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

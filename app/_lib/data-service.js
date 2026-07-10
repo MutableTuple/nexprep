@@ -172,13 +172,13 @@ export async function isUsernameAvailable(username) {
   return !data;
 }
 export async function getProfileByUsername(username) {
-  return handle(
-    await supabase
-      .from("profiles")
-      .select("*")
-      .eq("username", username)
-      .single(),
-  );
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("username", username)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
 }
 
 export async function createProfile(profile) {

@@ -4,7 +4,6 @@ import Navbar from "../_components/Navbar";
 export default function page() {
   return (
     <>
-      <Navbar />
       <ComingSoonPage
         title="Mock tests are coming"
         description="Full JEE-style timed tests with detailed analysis."

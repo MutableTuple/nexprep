@@ -12,6 +12,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 import { AuthProvider } from "./_lib/AuthProvider";
 import { createClient } from "./_lib/supabase-server";
+import Navbar from "./_components/Navbar";
 
 export const metadata = {
   title: "JEE Platform",
@@ -33,6 +34,7 @@ export default async function RootLayout({ children }) {
       <body className="min-h-screen bg-background font-sans text-foreground">
         <AuthProvider initialUser={user}>
           <Providers>
+            <Navbar />
             {children} <MainToast />
           </Providers>
         </AuthProvider>

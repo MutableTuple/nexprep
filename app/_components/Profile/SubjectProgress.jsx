@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Atom,
   FlaskConical,
@@ -12,88 +11,90 @@ import {
   BookOpen,
   CheckCircle2,
   PartyPopper,
-  Pencil,
-  Check,
-  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/app/_lib/supabase";
+import { useUserId } from "@/app/_lib/AuthProvider";
 
-const DEFAULT_SUBJECTS = [
-  {
-    subject: "Physics",
-    solved: 480,
-    total: 600,
+const SUBJECT_CONFIG = {
+  Physics: {
     icon: Atom,
     color: "bg-blue-500",
     ring: "text-blue-500",
     soft: "bg-blue-500/10",
   },
-  {
-    subject: "Chemistry",
-    solved: 390,
-    total: 550,
+  Chemistry: {
     icon: FlaskConical,
     color: "bg-emerald-500",
     ring: "text-emerald-500",
     soft: "bg-emerald-500/10",
   },
-  {
-    subject: "Mathematics",
-    solved: 500,
-    total: 500,
+  Mathematics: {
     icon: Calculator,
     color: "bg-purple-500",
     ring: "text-purple-500",
     soft: "bg-purple-500/10",
   },
-];
+};
 
-export default function SubjectProgress({ data, onChange }) {
-  const [subjects, setSubjects] = useState(data ?? DEFAULT_SUBJECTS);
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [draft, setDraft] = useState({ solved: "", total: "" });
+export default function SubjectProgress() {
+  const [subjects, setSubjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { userId, loading: authLoading } = useUserId();
 
   useEffect(() => {
-    if (data) setSubjects(data);
-  }, [data]);
+    if (!userId) return;
+
+    async function fetch() {
+      setLoading(true);
+
+      const [{ data: totals }, { data: solved }] = await Promise.all([
+        // total published questions per subject
+        supabase.from("questions").select("subject").eq("status", "published"),
+
+        // questions this user has attempted (distinct) per subject
+        supabase
+          .from("solved_questions")
+          .select("question_id, questions!inner(subject)")
+          .eq("user_id", userId),
+      ]);
+
+      // count totals per subject
+      const totalMap = {};
+      for (const q of totals ?? []) {
+        totalMap[q.subject] = (totalMap[q.subject] ?? 0) + 1;
+      }
+
+      // count distinct solved per subject (deduplicate question_id)
+      const solvedMap = {};
+      const seen = new Set();
+      for (const row of solved ?? []) {
+        const key = `${row.question_id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const subject = row.questions?.subject;
+        if (subject) solvedMap[subject] = (solvedMap[subject] ?? 0) + 1;
+      }
+
+      const result = Object.keys(SUBJECT_CONFIG).map((subject) => ({
+        subject,
+        total: totalMap[subject] ?? 0,
+        solved: solvedMap[subject] ?? 0,
+        ...SUBJECT_CONFIG[subject],
+      }));
+
+      setSubjects(result);
+      setLoading(false);
+    }
+
+    fetch();
+  }, [userId]);
 
   const totalSolved = subjects.reduce((a, s) => a + s.solved, 0);
   const totalQuestions = subjects.reduce((a, s) => a + s.total, 0);
   const overallPct = totalQuestions
     ? Math.round((totalSolved / totalQuestions) * 100)
     : 0;
-
-  function startEdit(i) {
-    setEditingIndex(i);
-    setDraft({
-      solved: String(subjects[i].solved),
-      total: String(subjects[i].total),
-    });
-  }
-
-  function cancelEdit() {
-    setEditingIndex(null);
-  }
-
-  function saveEdit(i) {
-    const total = Math.max(0, parseInt(draft.total, 10) || 0);
-    const solved = Math.min(
-      Math.max(0, parseInt(draft.solved, 10) || 0),
-      total,
-    );
-
-    const updated = subjects.map((s, idx) =>
-      idx === i ? { ...s, solved, total } : s,
-    );
-    setSubjects(updated);
-    setEditingIndex(null);
-    onChange?.(updated, updated[i]);
-  }
-
-  function handleKeyDown(e, i) {
-    if (e.key === "Enter") saveEdit(i);
-    if (e.key === "Escape") cancelEdit();
-  }
 
   return (
     <Card className="bg-card border-border shadow-none rounded-2xl overflow-hidden">
@@ -107,87 +108,60 @@ export default function SubjectProgress({ data, onChange }) {
               Subject Progress
             </h3>
           </div>
-          <span className="text-xs font-medium text-muted-foreground">
-            {totalSolved.toLocaleString()} / {totalQuestions.toLocaleString()}{" "}
-            <span className="text-foreground">({overallPct}%)</span>
-          </span>
+          {!loading && (
+            <span className="text-xs font-medium text-muted-foreground">
+              {totalSolved.toLocaleString()} / {totalQuestions.toLocaleString()}{" "}
+              <span className="text-foreground">({overallPct}%)</span>
+            </span>
+          )}
         </div>
       </CardHeader>
       <Separator />
       <CardContent className="px-6 py-5 flex flex-col gap-3">
-        {subjects.map((s, i) => {
-          const pct = s.total ? Math.round((s.solved / s.total) * 100) : 0;
-          const isComplete = pct >= 100;
-          const isEditing = editingIndex === i;
-          const Icon = isComplete ? CheckCircle2 : s.icon;
-
-          return (
-            <div
-              key={s.subject}
-              className={cn(
-                "group rounded-xl p-3 -mx-3",
-                isComplete && "bg-emerald-500/5 ring-1 ring-emerald-500/20",
-              )}
-            >
-              <div className="flex items-center justify-between mb-2.5">
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className={cn(
-                      "flex h-7 w-7 items-center justify-center rounded-lg",
-                      isComplete ? "bg-emerald-500/15" : s.soft,
-                    )}
-                  >
-                    <Icon
-                      size={14}
-                      className={isComplete ? "text-emerald-500" : s.ring}
-                    />
+        {loading
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="rounded-xl p-3 -mx-3 animate-pulse">
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-7 w-7 rounded-lg bg-muted" />
+                    <div className="h-4 w-20 rounded bg-muted" />
                   </div>
-                  <span className="text-sm font-medium text-foreground">
-                    {s.subject}
-                  </span>
+                  <div className="h-4 w-16 rounded bg-muted" />
                 </div>
+                <div className="h-2 w-full rounded-full bg-muted" />
+              </div>
+            ))
+          : subjects.map((s) => {
+              const pct = s.total ? Math.round((s.solved / s.total) * 100) : 0;
+              const isComplete = pct >= 100;
+              const Icon = isComplete ? CheckCircle2 : s.icon;
 
-                {isEditing ? (
-                  <div className="flex items-center gap-1">
-                    <Input
-                      type="number"
-                      min={0}
-                      autoFocus
-                      value={draft.solved}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, solved: e.target.value }))
-                      }
-                      onKeyDown={(e) => handleKeyDown(e, i)}
-                      className="h-7 w-16 px-2 text-xs text-center"
-                    />
-                    <span className="text-xs text-muted-foreground">/</span>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={draft.total}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, total: e.target.value }))
-                      }
-                      onKeyDown={(e) => handleKeyDown(e, i)}
-                      className="h-7 w-16 px-2 text-xs text-center"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => saveEdit(i)}
-                      className="flex h-6 w-6 items-center justify-center rounded-md text-emerald-500 hover:bg-emerald-500/10"
-                    >
-                      <Check size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={cancelEdit}
-                      className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5">
+              return (
+                <div
+                  key={s.subject}
+                  className={cn(
+                    "rounded-xl p-3 -mx-3",
+                    isComplete && "bg-emerald-500/5 ring-1 ring-emerald-500/20",
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className={cn(
+                          "flex h-7 w-7 items-center justify-center rounded-lg",
+                          isComplete ? "bg-emerald-500/15" : s.soft,
+                        )}
+                      >
+                        <Icon
+                          size={14}
+                          className={isComplete ? "text-emerald-500" : s.ring}
+                        />
+                      </div>
+                      <span className="text-sm font-medium text-foreground">
+                        {s.subject}
+                      </span>
+                    </div>
+
                     {isComplete ? (
                       <Badge className="gap-1 bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/15 border-0 font-medium">
                         <PartyPopper size={11} />
@@ -203,31 +177,22 @@ export default function SubjectProgress({ data, onChange }) {
                         </span>
                       </div>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => startEdit(i)}
-                      className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-muted hover:text-foreground"
-                    >
-                      <Pencil size={12} />
-                    </button>
                   </div>
-                )}
-              </div>
 
-              <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden">
-                <div
-                  className={cn(
-                    "h-full rounded-full",
-                    isComplete
-                      ? "bg-gradient-to-r from-emerald-400 to-emerald-600"
-                      : s.color,
-                  )}
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
+                  <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all duration-500",
+                        isComplete
+                          ? "bg-gradient-to-r from-emerald-400 to-emerald-600"
+                          : s.color,
+                      )}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
       </CardContent>
     </Card>
   );
