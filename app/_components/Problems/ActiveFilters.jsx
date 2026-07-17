@@ -2,17 +2,28 @@ import React from "react";
 import FilterChip from "./FilterChip";
 import { Button } from "@/components/ui/button";
 
+const STATUS_LABELS = {
+  unsolved: "Unsolved",
+  incorrect: "Incorrect",
+  solved: "Solved",
+};
+
 export default function ActiveFilters({
   activeSubject,
   activeDiffs,
+  activeStatus,
   query,
   onRemoveSubject,
   onRemoveDiff,
+  onRemoveStatus,
   onRemoveQuery,
   onClearAll,
 }) {
   const hasFilters =
-    activeSubject !== "All" || activeDiffs.length > 0 || query !== "";
+    activeSubject !== "All" ||
+    activeDiffs.length > 0 ||
+    !!activeStatus ||
+    query !== "";
   if (!hasFilters) return null;
 
   return (
@@ -24,6 +35,12 @@ export default function ActiveFilters({
       {activeDiffs.map((d) => (
         <FilterChip key={d} label={d} onRemove={() => onRemoveDiff(d)} />
       ))}
+      {activeStatus && (
+        <FilterChip
+          label={STATUS_LABELS[activeStatus]}
+          onRemove={onRemoveStatus}
+        />
+      )}
       {query && <FilterChip label={`"${query}"`} onRemove={onRemoveQuery} />}
       <Button
         variant="link"

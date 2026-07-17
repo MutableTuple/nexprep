@@ -5,10 +5,7 @@ import Footer from "../_components/Footer";
 export default function MainLayout({ children }) {
   return (
     <>
-      <main>
-        {children}
-        <Footer />
-      </main>
+      <main>{children}</main>
     </>
   );
 }

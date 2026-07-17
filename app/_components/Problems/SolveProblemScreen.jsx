@@ -61,6 +61,7 @@ export default function SolveProblemScreen({ questionId }) {
   const [revealedHints, setRevealedHints] = useState(0);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [xpAnimating, setXpAnimating] = useState(false);
+  const [earnedXP, setEarnedXP] = useState(null); // actual XP awarded once answered — null beforehand
 
   const { timerStr, seconds: elapsedSeconds } = useTimer(!submitted);
   const { user, loading: authLoading } = useUser();
@@ -104,6 +105,7 @@ export default function SolveProblemScreen({ questionId }) {
       setRevealedHints(0);
       setMobileSheetOpen(false);
       setXpAnimating(false);
+      setEarnedXP(null);
       setError(null);
     } catch (e) {
       setError(e);
@@ -136,6 +138,7 @@ export default function SolveProblemScreen({ questionId }) {
 
         if (prior) {
           setAttemptCount(prior.attempts ?? 1);
+          setEarnedXP(prior.xp_earned ?? null);
 
           if (prior.selected_option) {
             const isNumerical = ["NUMERICAL", "INTEGER"].includes(
@@ -237,13 +240,27 @@ export default function SolveProblemScreen({ questionId }) {
       setTimeout(() => setXpAnimating(false), 1200);
     }
 
-    // full XP only on a first-try correct answer; retries earn half, since
-    // otherwise a wrong guess costs nothing and encourages spamming answers
-    const xpEarned = isCorrect
-      ? attemptCount === 1
-        ? XP
-        : Math.round(XP / 2)
-      : 0;
+    // XP tapers on two axes: attempt count (first try vs retry) and speed
+    // (within the question's estimated time vs over it) — a slow first-try
+    // solve or a fast retry both land in the middle, a slow retry earns least.
+    const firstTry = attemptCount === 1;
+    const withinTime = question?.estimatedTimeSeconds
+      ? elapsedSeconds <= question.estimatedTimeSeconds
+      : true; // no estimate on this question — don't penalize for it
+
+    let xpEarned = 0;
+    if (isCorrect) {
+      if (firstTry && withinTime) {
+        xpEarned = XP;
+      } else if (firstTry && !withinTime) {
+        xpEarned = Math.round(XP * 0.75);
+      } else if (!firstTry && withinTime) {
+        xpEarned = Math.round(XP / 2);
+      } else {
+        xpEarned = Math.round(XP / 4);
+      }
+    }
+    setEarnedXP(xpEarned);
 
     // Check BEFORE recording whether this is the first solve of a new
     // calendar day — grounded directly in solved_questions.solved_at rather
@@ -300,6 +317,7 @@ export default function SolveProblemScreen({ questionId }) {
     setSelected(null);
     setPreviousValue("");
     setJustAnswered(false);
+    setEarnedXP(null);
     setAttemptCount((c) => c + 1);
   }
 
@@ -308,6 +326,7 @@ export default function SolveProblemScreen({ questionId }) {
     return <ErrorScreen onRetry={() => loadQuestion(questionId)} />;
 
   const XP = question.marks * 25;
+  const displayXp = submitted && earnedXP !== null ? earnedXP : XP;
   const progress =
     allIds.length > 0
       ? Math.round(((currentIndex + 1) / allIds.length) * 100)
@@ -327,7 +346,7 @@ export default function SolveProblemScreen({ questionId }) {
   const answerPanel = (
     <AnswerPanel
       question={question}
-      xp={XP}
+      xp={displayXp}
       submitted={submitted}
       selected={selected}
       previousValue={previousValue}
@@ -354,7 +373,7 @@ export default function SolveProblemScreen({ questionId }) {
         topic={question.chapter}
         title={question.title}
         subject={question.subject}
-        xp={XP}
+        xp={displayXp}
       />
 
       {/*

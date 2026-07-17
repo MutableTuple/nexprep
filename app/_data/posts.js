@@ -5,7 +5,7 @@ export const BLOG_POSTS = [
     excerpt:
       "Everything you need to know about the JEE Main 2026 exam structure, section-wise weightage, and how negative marking actually affects your score.",
     category: "Exam Strategy",
-    author: "Codédex Team",
+    author: "Rank Grind Team",
     authorInitials: "CT",
     date: "2026-06-15",
     readingTime: "6 min read",
@@ -145,7 +145,7 @@ Students often over-invest in chapters that feel intellectually satisfying — l
     excerpt:
       "Most study plans collapse within two weeks. Here's how to design one that accounts for the fact that you're human.",
     category: "Study Tips",
-    author: "Codédex Team",
+    author: "Rank Grind Team",
     authorInitials: "CT",
     date: "2026-05-10",
     readingTime: "4 min read",

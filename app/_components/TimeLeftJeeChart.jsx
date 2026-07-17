@@ -211,7 +211,8 @@ export default function TimeLeftJeeChart() {
               />
             ) : (
               <p className="py-8 text-center text-sm text-muted-foreground">
-                Set your target exam year in your profile to see this countdown.
+                Set your target exam year in your profile to see this countdown,
+                by going to edit profile.
               </p>
             )}
           </TabsContent>

@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Clock3, Bookmark, CheckCircle2, ChevronRight } from "lucide-react";
+import {
+  Clock3,
+  Bookmark,
+  CheckCircle2,
+  XCircle,
+  ChevronRight,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -22,6 +28,9 @@ export default function QuestionCard({
   time = "4 min",
   xp = 150,
   solved = false,
+  solvedCorrect = null,
+  xpEarned = 0,
+  attemptsCount = 0,
   bookmarked = false,
   questions = 18,
 }) {
@@ -51,9 +60,17 @@ export default function QuestionCard({
             <span className="text-xs text-muted-foreground">{subject}</span>
           </div>
 
-          {bookmarked && (
-            <Bookmark size={17} className="fill-foreground text-foreground" />
-          )}
+          <div className="flex items-center gap-2">
+            {solved &&
+              (solvedCorrect ? (
+                <CheckCircle2 size={17} className="text-green-500" />
+              ) : (
+                <XCircle size={17} className="text-red-500" />
+              ))}
+            {bookmarked && (
+              <Bookmark size={17} className="fill-foreground text-foreground" />
+            )}
+          </div>
         </div>
 
         {/* Title */}
@@ -70,18 +87,33 @@ export default function QuestionCard({
             <Clock3 size={15} />
             {time}
           </div>
-          <span className="font-semibold text-foreground">+{xp} XP</span>
-          <span>{questions} attempts</span>
+          <span className="font-semibold text-foreground">
+            +{solved ? xpEarned : xp} XP
+          </span>
+          {solved ? (
+            <span>
+              {attemptsCount} attempt{attemptsCount === 1 ? "" : "s"}
+            </span>
+          ) : (
+            <span>{questions} attempts</span>
+          )}
         </div>
 
         {/* Footer */}
         <Separator className="mt-6" />
         <div className="flex items-center justify-between pt-5">
           {solved ? (
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <CheckCircle2 size={18} />
-              Solved
-            </div>
+            solvedCorrect ? (
+              <div className="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
+                <CheckCircle2 size={18} />
+                Solved correctly
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm font-medium text-red-500 dark:text-red-400">
+                <XCircle size={18} />
+                Attempted · Incorrect
+              </div>
+            )
           ) : (
             <span className="text-sm text-muted-foreground">
               Start Challenge

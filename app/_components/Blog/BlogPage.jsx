@@ -92,14 +92,14 @@ export default function BlogPage() {
         <div className="mx-auto max-w-5xl px-4 sm:px-8 py-10 sm:py-14 flex flex-col items-center gap-4 text-center">
           <Badge variant="secondary" className="rounded-full gap-1.5 px-3 py-1">
             <Newspaper size={12} />
-            Codédex Blog
+            Rank Grind Blog
           </Badge>
           <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
             Strategy, tips, and updates for JEE aspirants
           </h1>
           <p className="max-w-xl text-sm text-muted-foreground sm:text-base">
             Exam patterns, subject deep-dives, and study techniques from the
-            Codédex team — updated regularly.
+            Rank Grind team — updated regularly.
           </p>
 
           <div className="relative mt-2 w-full max-w-md">

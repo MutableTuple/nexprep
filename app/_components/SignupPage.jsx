@@ -11,6 +11,9 @@ import {
   Mail,
   Lock,
   User,
+  Building2,
+  Trophy,
+  Calendar,
   CheckCircle2,
   XCircle,
   MailCheck,
@@ -22,10 +25,37 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { showToast } from "../_lib/toast";
 import { supabase } from "../_lib/supabase";
-import { isUsernameAvailable } from "../_lib/data-service";
+import {
+  isUsernameAvailable,
+  upsertProfileDetails,
+} from "../_lib/data-service";
+
+const EXAM_SUGGESTIONS = [
+  "JEE Main",
+  "JEE Advanced",
+  "BITSAT",
+  "VITEEE",
+  "COMEDK UGET",
+  "MHT CET",
+  "KCET",
+  "WBJEE",
+];
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from(
+  { length: 2050 - CURRENT_YEAR + 1 },
+  (_, i) => CURRENT_YEAR + i,
+);
 
 // ─── Password Rules ────────────────────────────────────────────────────────────
 
@@ -171,6 +201,9 @@ function PasswordStrength({ password }) {
 export default function SignupPage() {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [college, setCollege] = useState("");
+  const [examTarget, setExamTarget] = useState("");
+  const [examYear, setExamYear] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -255,11 +288,23 @@ export default function SignupPage() {
 
     // email confirmation disabled in Supabase → session comes back immediately
     if (data.session) {
+      try {
+        await upsertProfileDetails(data.user.id, {
+          college: college.trim() || null,
+          exam: examTarget || null,
+          target_year: examYear ? parseInt(examYear, 10) : null,
+        });
+      } catch (err) {
+        // don't block account creation over this — they can fill it in
+        // later from their profile if it fails to save here
+        console.error("Failed to save signup profile details:", err);
+      }
+
       showToast.success(
         "Account created!",
-        "Welcome to Codédex. Let's start solving.",
+        "Welcome to Rank Grind. Let's start solving.",
       );
-      router.push("/dashboard");
+      router.push("/problems");
       router.refresh();
       return;
     }
@@ -294,7 +339,7 @@ export default function SignupPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Brain size={20} />
             </div>
-            <span className="text-xl tracking-tight">Codédex</span>
+            <span className="text-xl tracking-tight">Rank Grind</span>
             <Badge
               variant="secondary"
               className="text-[10px] px-1.5 py-0 h-4 font-semibold"
@@ -308,7 +353,7 @@ export default function SignupPage() {
                 Create your account
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Join thousands of JEE aspirants on Codédex
+                Join thousands of JEE aspirants on Rank Grind
               </p>
             </div>
           )}
@@ -418,6 +463,69 @@ export default function SignupPage() {
                       </p>
                     </div>
                   )}
+
+                  {/* College */}
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="college" className="text-sm font-medium">
+                      College Name
+                    </Label>
+                    <div className="relative">
+                      <Building2
+                        size={15}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+                      />
+                      <Input
+                        id="college"
+                        type="text"
+                        placeholder="e.g. Delhi Public School"
+                        value={college}
+                        onChange={(e) => setCollege(e.target.value)}
+                        className="pl-9 h-11 rounded-xl bg-background"
+                        autoComplete="organization"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Target exam + exam year */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-sm font-medium flex items-center gap-1.5">
+                        <Trophy size={13} className="text-muted-foreground" />
+                        Target Exam
+                      </Label>
+                      <Select value={examTarget} onValueChange={setExamTarget}>
+                        <SelectTrigger className="h-11 rounded-xl bg-background w-full">
+                          <SelectValue placeholder="Select exam" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EXAM_SUGGESTIONS.map((exam) => (
+                            <SelectItem key={exam} value={exam}>
+                              {exam}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-sm font-medium flex items-center gap-1.5">
+                        <Calendar size={13} className="text-muted-foreground" />
+                        Exam Year
+                      </Label>
+                      <Select value={examYear} onValueChange={setExamYear}>
+                        <SelectTrigger className="h-11 rounded-xl bg-background w-full">
+                          <SelectValue placeholder="Select year" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          {YEAR_OPTIONS.map((y) => (
+                            <SelectItem key={y} value={String(y)}>
+                              {y}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
                   {/* Email */}
                   <div className="flex flex-col gap-1.5">

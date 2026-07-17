@@ -57,20 +57,13 @@ export const metadata = {
     siteName: SITE_NAME,
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "rankgrind.com — JEE Preparation Platform",
-      },
-    ],
+    // image comes from app/opengraph-image.jsx (Next.js picks it up
+    // automatically) — no need to list a static file here
   },
   twitter: {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: ["/og-image.png"],
   },
   robots: {
     index: true,
@@ -89,9 +82,9 @@ export const metadata = {
     apple: "/icon.png",
   },
   manifest: "/site.webmanifest",
-  verification: {
-    google: "your-google-search-console-verification-code",
-  },
+  // TODO: add your Google Search Console property for this domain and
+  // paste the real verification code it gives you, e.g.:
+  // verification: { google: "abc123..." },
 };
 
 export const viewport = {

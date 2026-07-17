@@ -1,0 +1,13 @@
+{
+  "name": "rankgrind.com — India's Most Gamified JEE Preparation Platform",
+  "short_name": "Rank Grind",
+  "description": "Prepare for JEE Main & Advanced with AI-powered practice questions, chapter-wise tests, and gamified XP & streak tracking.",
+  "icons": [
+    { "src": "/icon.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/"
+}

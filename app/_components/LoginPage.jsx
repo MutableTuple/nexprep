@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { showToast } from "../_lib/toast";
 import { supabase } from "../_lib/supabase";
+import { getProfile } from "../_lib/data-service";
 
 // ─── Social Button ─────────────────────────────────────────────────────────────
 
@@ -74,19 +75,24 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       showToast.error("Login failed", error.message);
       return;
     }
 
+    const profile = await getProfile(data.user.id);
+    setLoading(false);
+
     showToast.success("Welcome back!", "You have been logged in.");
-    router.push("/user/name/profile");
+    router.push(
+      profile?.username ? `/user/${profile.username}/profile` : "/profile",
+    );
     router.refresh();
   }
 
@@ -118,7 +124,7 @@ export default function LoginPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Brain size={20} />
             </div>
-            <span className="text-xl tracking-tight">Codédex</span>
+            <span className="text-xl tracking-tight">Rank Grind</span>
             <Badge
               variant="secondary"
               className="text-[10px] px-1.5 py-0 h-4 font-semibold"

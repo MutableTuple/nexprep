@@ -4,7 +4,7 @@ import { createClient } from "@/app/_lib/server";
 export async function GET(request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = searchParams.get("next") ?? "/problems";
 
   if (code) {
     const supabase = await createClient();

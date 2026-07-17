@@ -24,11 +24,15 @@ import {
   isUsernameAvailable,
   getUserStats,
   getMyRank,
+  getFollowCounts,
 } from "@/app/_lib/data-service";
 import StatCard from "./Problems/StatCard";
 import ProfileTabs from "./ProfileTabs";
 import ProfileInfo from "./Profile/ProfileInfo";
 import { useUser } from "@/app/_lib/AuthProvider";
+import FollowButton from "./FollowButton";
+import AddFriendButton from "./AddFriendButton";
+import DuelButton from "./DuelButton";
 
 const BADGES = [
   {
@@ -113,6 +117,7 @@ const EMPTY_PROFILE = {
   target: "",
   examYear: "",
   location: "",
+  college: "",
 };
 
 function getInitials(name) {
@@ -134,11 +139,12 @@ function mapDbProfileToView(dbProfile, authUser) {
     target: dbProfile?.exam || "",
     examYear: dbProfile?.target_year ?? "",
     location: dbProfile?.country || "",
+    college: dbProfile?.college || "",
     id: dbProfile?.id || null,
   };
 }
 
-const Body = memo(function Body({ stats }) {
+const Body = memo(function Body({ stats, profileUserId, viewerId, isOwn }) {
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-8 py-6 sm:py-8 flex flex-col gap-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -146,7 +152,12 @@ const Body = memo(function Body({ stats }) {
           <StatCard key={s.label} {...s} />
         ))}
       </div>
-      <ProfileTabs BADGES={BADGES} />
+      <ProfileTabs
+        BADGES={BADGES}
+        profileUserId={profileUserId}
+        viewerId={viewerId}
+        isOwn={isOwn}
+      />
     </div>
   );
 });
@@ -161,6 +172,10 @@ export default function UserProfilePage({ username: targetUsername, onSave }) {
   const [profileLoading, setProfileLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [followCounts, setFollowCounts] = useState({
+    followers: 0,
+    following: 0,
+  });
 
   const [editMode, setEditMode] = useState(false);
   const [draft, setDraft] = useState(EMPTY_PROFILE);
@@ -205,7 +220,7 @@ export default function UserProfilePage({ username: targetUsername, onSave }) {
 
         if (!cancelled) setProfile(mapDbProfileToView(dbProfile, user));
 
-        // load stats for whoever owns this profile
+        // load stats + follow counts for whoever owns this profile
         const profileUserId = dbProfile?.id;
         if (profileUserId) {
           try {
@@ -216,6 +231,14 @@ export default function UserProfilePage({ username: targetUsername, onSave }) {
             if (!cancelled) setStats({ ...userStats, rank });
           } catch {
             if (!cancelled) setStats(null);
+          }
+
+          try {
+            const counts = await getFollowCounts(profileUserId);
+            if (!cancelled) setFollowCounts(counts);
+          } catch (err) {
+            console.error("Failed to load follow counts:", err);
+            if (!cancelled) setFollowCounts({ followers: 0, following: 0 });
           }
         }
       } catch (err) {
@@ -296,6 +319,7 @@ export default function UserProfilePage({ username: targetUsername, onSave }) {
       exam: draft.target.trim(),
       target_year: draft.examYear ? parseInt(draft.examYear, 10) : null,
       country: draft.location.trim(),
+      college: draft.college.trim() || null,
       avatar_url: draft.avatar || null,
     };
 
@@ -408,6 +432,7 @@ export default function UserProfilePage({ username: targetUsername, onSave }) {
               canEdit={isOwn}
               draft={draft}
               profile={profile}
+              followCounts={followCounts}
               enterEdit={isOwn ? enterEdit : undefined}
               saveEdit={isOwn ? saveEdit : undefined}
               cancelEdit={isOwn ? cancelEdit : undefined}
@@ -415,11 +440,24 @@ export default function UserProfilePage({ username: targetUsername, onSave }) {
               saving={saving}
               usernameStatus={usernameStatus}
             />
+
+            {!isOwn && user && (
+              <div className="flex gap-2 shrink-0 mt-2 sm:mt-0">
+                <FollowButton userId={user.id} targetUserId={profile.id} />
+                <AddFriendButton userId={user.id} targetUserId={profile.id} />
+                <DuelButton userId={user.id} targetUserId={profile.id} />
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      <Body stats={displayStats} />
+      <Body
+        stats={displayStats}
+        profileUserId={profile.id}
+        viewerId={user?.id ?? null}
+        isOwn={isOwn}
+      />
     </div>
   );
 }

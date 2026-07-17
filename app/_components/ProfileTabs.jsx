@@ -5,8 +5,14 @@ import ActivityHeatmap from "./Profile/ActivityHeatmap";
 import RecentActivity from "./Profile/RecentActivity";
 import { Progress } from "@/components/ui/progress";
 import BadgesGrid from "./Profile/BadgesGrid";
+import FriendsTab from "./Profile/FriendsTab";
 
-export default function ProfileTabs({ BADGES }) {
+export default function ProfileTabs({
+  BADGES,
+  profileUserId,
+  viewerId,
+  isOwn,
+}) {
   return (
     <Tabs defaultValue="overview">
       <TabsList className="rounded-xl h-10">
@@ -18,6 +24,9 @@ export default function ProfileTabs({ BADGES }) {
         </TabsTrigger>
         <TabsTrigger value="badges" className="rounded-lg text-sm">
           Badges
+        </TabsTrigger>
+        <TabsTrigger value="friends" className="rounded-lg text-sm">
+          Friends
         </TabsTrigger>
       </TabsList>
 
@@ -44,6 +53,10 @@ export default function ProfileTabs({ BADGES }) {
           />
         </div>
         <BadgesGrid BADGES={BADGES} />
+      </TabsContent>
+
+      <TabsContent value="friends" className="mt-4">
+        <FriendsTab userId={profileUserId} viewerId={viewerId} isOwn={isOwn} />
       </TabsContent>
     </Tabs>
   );

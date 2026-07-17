@@ -3,8 +3,8 @@ import Navbar from "../_components/Navbar";
 
 export const metadata = {
   title: {
-    default: "Practice Problems | Codédex JEE",
-    template: "%s | Codédex JEE",
+    default: "Practice Problems | Rank Grind JEE",
+    template: "%s | Rank Grind JEE",
   },
   description:
     "Solve curated JEE Main & Advanced problems in Physics, Chemistry, and Mathematics. Build streaks, earn XP, and track your progress.",
@@ -18,7 +18,7 @@ export const metadata = {
     "IIT JEE",
   ],
   openGraph: {
-    title: "Practice Problems | Codédex JEE",
+    title: "Practice Problems | Rank Grind JEE",
     description:
       "Solve curated JEE problems and track your progress with streaks and XP.",
     type: "website",
@@ -26,7 +26,7 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Practice Problems | Codédex JEE",
+    title: "Practice Problems | Rank Grind JEE",
     description:
       "Solve curated JEE problems and track your progress with streaks and XP.",
   },
@@ -37,9 +37,5 @@ export const metadata = {
 };
 
 export default function layout({ children }) {
-  return (
-    <div>
-      {children}
-    </div>
-  );
+  return <div>{children}</div>;
 }

@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Building2,
   Calendar,
   Check,
   CheckCircle2,
@@ -51,6 +52,7 @@ export default function ProfileInfo({
   updateDraft,
   saving,
   usernameStatus,
+  followCounts,
 }) {
   return (
     <div className="flex-1 min-w-0">
@@ -109,7 +111,18 @@ export default function ProfileInfo({
                 rows={2}
                 className="text-sm resize-none"
               />
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-1">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                    <Building2 size={11} /> College
+                  </label>
+                  <Input
+                    value={draft.college}
+                    onChange={(e) => updateDraft("college", e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] text-muted-foreground flex items-center gap-1">
                     <Trophy size={11} /> Target Exam
@@ -176,6 +189,22 @@ export default function ProfileInfo({
               <p className="text-sm text-muted-foreground mt-0.5">
                 {profile.username}
               </p>
+
+              <div className="flex items-center gap-4 mt-2 text-sm">
+                <span>
+                  <strong className="text-foreground">
+                    {followCounts?.followers ?? 0}
+                  </strong>{" "}
+                  <span className="text-muted-foreground">Followers</span>
+                </span>
+                <span>
+                  <strong className="text-foreground">
+                    {followCounts?.following ?? 0}
+                  </strong>{" "}
+                  <span className="text-muted-foreground">Following</span>
+                </span>
+              </div>
+
               <p className="text-sm text-muted-foreground mt-2 max-w-md">
                 {profile.bio}
               </p>
@@ -190,6 +219,14 @@ export default function ProfileInfo({
                   <Calendar size={11} />{" "}
                   {profile.examYear ? `Target ${profile.examYear}` : "Not set"}
                 </Badge>
+                {profile.college && (
+                  <Badge
+                    variant="outline"
+                    className="rounded-full text-xs gap-1"
+                  >
+                    <Building2 size={11} /> {profile.college}
+                  </Badge>
+                )}
                 <Badge variant="outline" className="rounded-full text-xs gap-1">
                   <MapPin size={11} /> {profile.location || "Unknown"}
                 </Badge>

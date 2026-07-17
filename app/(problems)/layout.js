@@ -5,10 +5,5 @@ import Footer from "../_components/Footer";
 import ProblemScreen from "../_components/Problems/ProblemScreen";
 
 export default function layout({ children }) {
-  return (
-    <>
-      {children}
-      <Footer />
-    </>
-  );
+  return <>{children}</>;
 }

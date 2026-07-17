@@ -218,7 +218,7 @@ export default function Footer() {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "EducationalOrganization",
-    name: "Codédex",
+    name: "Rank Grind",
     description:
       "India's next generation AI learning platform for JEE Main & Advanced aspirants.",
     url: "https://rankgrind.com",
@@ -266,7 +266,7 @@ export default function Footer() {
               <Link
                 href="/"
                 className="mb-6 sm:mb-8 flex items-center gap-3"
-                aria-label="Codédex home"
+                aria-label="Rank Grind home"
               >
                 <div>
                   <img src={"/logo-dark.png"} />

@@ -26,13 +26,19 @@ function mapQuestion(q) {
 
     xp: q.marks * 25,
     time: `${Math.ceil(q.estimated_time_seconds / 60)} min`,
+    estimatedTimeSeconds: q.estimated_time_seconds, // add this line
     marks: q.marks,
     negativeMarks: q.negative_marks,
 
     options: q.data?.options ?? [],
     correctOption:
       q.data?.correctOptionId ?? q.data?.correctOptionIds?.[0] ?? "",
+    correctOptionIds:
+      q.data?.correctOptionIds ??
+      (q.data?.correctOptionId ? [q.data.correctOptionId] : []),
     correctValue: q.data?.correctValue ?? null,
+    tolerance: q.data?.tolerance ?? 0,
+    unit: q.data?.unit ?? "",
 
     explanation: q.explanation ?? "",
     solutionSteps: q.data?.solutionSteps ?? [],
@@ -55,6 +61,7 @@ export async function getQuestions({
   search = "",
   page = 1,
   limit = 25,
+  userId = null,
 } = {}) {
   let query = supabase
     .from("questions")
@@ -66,11 +73,9 @@ export async function getQuestions({
   if (subject && subject !== "All") {
     query = query.eq("subject", subject);
   }
-
   if (difficulties.length > 0) {
     query = query.in("difficulty", difficulties);
   }
-
   if (search.trim()) {
     query = query.textSearch("search_text", search.trim(), {
       type: "websearch",
@@ -80,7 +85,24 @@ export async function getQuestions({
 
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []).map(mapQuestion);
+  const mapped = (data ?? []).map(mapQuestion);
+
+  if (!userId || mapped.length === 0) return mapped;
+
+  const statusMap = await getSolvedStatusMap(
+    userId,
+    mapped.map((q) => q.id),
+  );
+  return mapped.map((q) => {
+    const status = statusMap[q.id];
+    return {
+      ...q,
+      solved: !!status,
+      solvedCorrect: status?.is_correct ?? null,
+      xpEarned: status?.xp_earned ?? 0,
+      attemptsCount: status?.attempts ?? 0,
+    };
+  });
 }
 export async function getQuestionById(id) {
   const { data, error } = await supabase
@@ -193,6 +215,23 @@ export async function updateProfile(userId, updates) {
       .from("profiles")
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq("id", userId)
+      .select()
+      .single(),
+  );
+}
+
+// Used right after signup, when we can't be certain a `profiles` row has
+// already been created by a DB trigger — upsert only touches the columns
+// passed in, so it can't clobber username/display_name/etc. if the row
+// already exists.
+export async function upsertProfileDetails(userId, details) {
+  return handle(
+    await supabase
+      .from("profiles")
+      .upsert(
+        { id: userId, ...details, updated_at: new Date().toISOString() },
+        { onConflict: "id" },
+      )
       .select()
       .single(),
   );
@@ -433,7 +472,9 @@ export async function getFriendship(id) {
 export async function listFriendships(userId, status) {
   let query = supabase
     .from("friendships")
-    .select("*")
+    .select(
+      "*, sender:profiles!friendships_sender_id_fkey(*), receiver:profiles!friendships_receiver_id_fkey(*)",
+    )
     .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
   if (status) query = query.eq("status", status);
   return handle(await query.order("created_at", { ascending: false }));
@@ -846,4 +887,236 @@ export async function getQuestionsPaged({
   const { data, error, count } = await query;
   if (error) throw error;
   return { questions: (data ?? []).map(mapQuestion), count: count ?? 0 };
+}
+export async function getQuestionOfTheDay() {
+  const { data: ids, error } = await supabase
+    .from("questions")
+    .select("id")
+    .eq("status", "published")
+    .order("id", { ascending: true });
+  if (error) throw error;
+  if (!ids || ids.length === 0) return null;
+
+  const epochDay = Math.floor(Date.now() / 86400000);
+  const index = epochDay % ids.length;
+  return getQuestionById(ids[index].id);
+}
+
+export async function listNotifications(userId, limit = 20) {
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("*, actor:profiles!notifications_actor_id_fkey(*)")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data;
+}
+
+export async function getUnreadNotificationCount(userId) {
+  const { count, error } = await supabase
+    .from("notifications")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("read", false);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function markAllNotificationsRead(userId) {
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("user_id", userId)
+    .eq("read", false);
+  if (error) throw error;
+}
+
+/* ============================================================
+   FOLLOWS
+   ============================================================ */
+
+export async function isFollowing(followerId, followedId) {
+  const { data, error } = await supabase
+    .from("follows")
+    .select("follower_id")
+    .eq("follower_id", followerId)
+    .eq("followed_id", followedId)
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
+}
+
+export async function followUser(followerId, followedId) {
+  const { error } = await supabase
+    .from("follows")
+    .insert({ follower_id: followerId, followed_id: followedId });
+  if (error) throw error;
+}
+
+export async function unfollowUser(followerId, followedId) {
+  const { error } = await supabase
+    .from("follows")
+    .delete()
+    .eq("follower_id", followerId)
+    .eq("followed_id", followedId);
+  if (error) throw error;
+}
+
+export async function getFollowCounts(userId) {
+  const [{ count: followers, error: e1 }, { count: following, error: e2 }] =
+    await Promise.all([
+      supabase
+        .from("follows")
+        .select("*", { count: "exact", head: true })
+        .eq("followed_id", userId),
+      supabase
+        .from("follows")
+        .select("*", { count: "exact", head: true })
+        .eq("follower_id", userId),
+    ]);
+  if (e1) throw e1;
+  if (e2) throw e2;
+  return { followers: followers ?? 0, following: following ?? 0 };
+}
+
+/* ============================================================
+   FRIENDSHIP STATUS (for the profile-page Add Friend button)
+   ============================================================ */
+
+export async function getFriendshipStatus(userId, otherId) {
+  const { data, error } = await supabase
+    .from("friendships")
+    .select("*")
+    .or(
+      `and(sender_id.eq.${userId},receiver_id.eq.${otherId}),and(sender_id.eq.${otherId},receiver_id.eq.${userId})`,
+    )
+    .maybeSingle();
+  if (error) throw error;
+  return data; // null | { id, sender_id, receiver_id, status }
+}
+export async function getQuestionsByIds(ids) {
+  const { data, error } = await supabase
+    .from("questions")
+    .select(SELECT_FULL)
+    .in("id", ids);
+  if (error) throw error;
+  const map = new Map((data ?? []).map((q) => [q.id, mapQuestion(q)]));
+  return ids.map((id) => map.get(id)).filter(Boolean);
+}
+
+export async function createDuelInvite(player1Id, player2Id, subject) {
+  let query = supabase.from("questions").select("id").eq("status", "published");
+  if (subject && subject !== "All") query = query.eq("subject", subject);
+  const { data: pool, error: poolErr } = await query.limit(200);
+  if (poolErr) throw poolErr;
+
+  const questionIds = [...(pool ?? [])]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 5)
+    .map((q) => q.id);
+
+  const { data, error } = await supabase
+    .from("duels")
+    .insert({
+      player1_id: player1Id,
+      player2_id: player2Id,
+      question_ids: questionIds,
+      status: "waiting",
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function acceptDuel(duelId) {
+  const { data, error } = await supabase
+    .from("duels")
+    .update({ status: "active", started_at: new Date().toISOString() })
+    .eq("id", duelId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function declineDuel(duelId) {
+  const { error } = await supabase
+    .from("duels")
+    .update({ status: "cancelled" })
+    .eq("id", duelId);
+  if (error) throw error;
+}
+
+export async function findOrQueueDuel(userId, subject = null) {
+  const { data, error } = await supabase.rpc("find_or_queue_duel", {
+    p_user_id: userId,
+    p_subject: subject,
+  });
+  if (error) throw error;
+  return data; // duel id, or null if queued
+}
+
+export async function leaveDuelQueue(userId) {
+  const { error } = await supabase
+    .from("duel_queue")
+    .delete()
+    .eq("user_id", userId);
+  if (error) throw error;
+}
+
+export async function getDuel(duelId) {
+  const { data, error } = await supabase
+    .from("duels")
+    .select(
+      "*, player1:profiles!duels_player1_id_fkey(*), player2:profiles!duels_player2_id_fkey(*)",
+    )
+    .eq("id", duelId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function submitDuelAnswer({
+  duelId,
+  userId,
+  questionId,
+  isCorrect,
+  timeTakenMs,
+  selectedAnswer,
+}) {
+  const { error } = await supabase.from("duel_answers").insert({
+    duel_id: duelId,
+    user_id: userId,
+    question_id: questionId,
+    is_correct: isCorrect,
+    time_taken_ms: timeTakenMs,
+    selected_answer: selectedAnswer ?? null,
+  });
+  if (error) throw error;
+}
+export async function listDuelAnswers(duelId) {
+  const { data, error } = await supabase
+    .from("duel_answers")
+    .select("*")
+    .eq("duel_id", duelId)
+    .order("answered_at", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function getSolvedStatusMap(userId, questionIds) {
+  if (!userId || !questionIds?.length) return {};
+  const { data, error } = await supabase
+    .from("solved_questions")
+    .select("question_id, is_correct, xp_earned, attempts")
+    .eq("user_id", userId)
+    .in("question_id", questionIds);
+  if (error) throw error;
+  const map = {};
+  for (const row of data ?? []) {
+    map[row.question_id] = row;
+  }
+  return map;
 }

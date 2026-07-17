@@ -28,6 +28,7 @@ export default function ProblemHeader({
   title,
   subject,
   xp,
+  streak,
 }) {
   const [particles, setParticles] = useState([]);
   const wasAnimating = useRef(false);
@@ -70,7 +71,7 @@ export default function ProblemHeader({
           </Badge>
           <Badge className="gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-50 text-xs sm:text-sm font-bold">
             <Flame size={12} className="text-orange-500" />
-            18
+            {streak}
           </Badge>
           <div className="relative hidden sm:block">
             <Badge

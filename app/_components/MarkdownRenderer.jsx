@@ -7,7 +7,11 @@ import clsx from "clsx";
 
 import "katex/dist/katex.min.css";
 
-export default function MarkdownRenderer({ children, className }) {
+export default function MarkdownRenderer({
+  children,
+  className,
+  inline = false,
+}) {
   return (
     <div
       className={clsx(
@@ -76,12 +80,16 @@ export default function MarkdownRenderer({ children, className }) {
         "prose-th:border",
         "prose-td:border",
 
+        // inline mode — collapse block spacing for compact contexts (e.g. answer options)
+        inline && "prose-p:inline prose-p:my-0 prose-p:leading-normal",
+
         className,
       )}
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, rehypeRaw]}
+        components={inline ? { p: "span" } : undefined}
       >
         {children ?? ""}
       </ReactMarkdown>
