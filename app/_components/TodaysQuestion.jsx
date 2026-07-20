@@ -14,6 +14,10 @@ import {
   Lock,
   ImageIcon,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+const MotionButton = motion(Button);
 
 const CORRECT_INDEX = 1;
 const TOTAL_SECONDS = 90;
@@ -47,21 +51,21 @@ const kpis = [
     label: "Avg time",
     value: "42s",
     sub: "8s faster",
-    subColor: "text-green-600",
+    subColor: "text-green-600 dark:text-green-400",
   },
   {
     icon: <Target size={13} />,
     label: "Accuracy",
     value: "87%",
     sub: "Top 15%",
-    subColor: "text-blue-600",
+    subColor: "text-blue-600 dark:text-blue-400",
   },
   {
     icon: <Trophy size={13} />,
     label: "Rank",
     value: "#142",
     sub: "↑ 18 today",
-    subColor: "text-yellow-600",
+    subColor: "text-yellow-600 dark:text-yellow-400",
   },
   {
     icon: <Flame size={13} className="text-orange-500" />,
@@ -177,27 +181,29 @@ function LeaderboardModal({ open, onClose, leaderboard }) {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 28 }}
-            className="w-full max-w-sm rounded-t-3xl sm:rounded-2xl bg-white p-6 shadow-2xl"
+            className="w-full max-w-sm rounded-t-3xl sm:rounded-2xl border border-border bg-card p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-1 flex justify-center sm:hidden">
-              <div className="h-1 w-10 rounded-full bg-neutral-200" />
+              <div className="h-1 w-10 rounded-full bg-muted" />
             </div>
             <div className="mb-4 flex items-center justify-between mt-3 sm:mt-0">
-              <h2 className="flex items-center gap-2 text-lg font-bold">
+              <h3 className="flex items-center gap-2 text-lg font-bold text-foreground">
                 <Trophy size={18} className="text-yellow-500" />
                 Daily Leaderboard
-              </h2>
-              <button
+              </h3>
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={onClose}
-                className="rounded-full p-1 hover:bg-neutral-100 transition"
+                aria-label="Close leaderboard"
               >
-                <X size={18} />
-              </button>
+                <X size={16} />
+              </Button>
             </div>
-            <p className="mb-4 text-xs text-neutral-400">
+            <p className="mb-4 text-xs text-muted-foreground">
               Your rank:{" "}
-              <span className="font-semibold text-blue-600">
+              <span className="font-semibold text-primary">
                 #{yourRank} of {sorted.length}
               </span>
             </p>
@@ -207,29 +213,32 @@ function LeaderboardModal({ open, onClose, leaderboard }) {
                   key={p.name}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${
                     p.you
-                      ? "bg-blue-50 border border-blue-100"
-                      : "hover:bg-neutral-50"
+                      ? "bg-primary/10 border border-primary/20"
+                      : "hover:bg-muted/50"
                   }`}
                 >
                   <span className="w-7 text-center text-sm">{medal(i)}</span>
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xs font-semibold text-neutral-600">
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
                     {p.name.slice(0, 2).toUpperCase()}
                   </div>
                   <span
-                    className={`flex-1 text-sm font-medium ${p.you ? "text-blue-700" : ""}`}
+                    className={`flex-1 text-sm font-medium ${p.you ? "text-primary" : "text-foreground"}`}
                   >
                     {p.name}
                     {p.you && (
-                      <span className="ml-1.5 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
+                      <Badge
+                        variant="secondary"
+                        className="ml-1.5 bg-primary/15 text-primary"
+                      >
                         You
-                      </span>
+                      </Badge>
                     )}
                   </span>
                   <div className="text-right">
-                    <p className="text-sm font-semibold">
+                    <p className="text-sm font-semibold text-foreground">
                       {p.score ? p.score.toLocaleString() : "—"}
                     </p>
-                    <p className="text-[10px] text-neutral-400">
+                    <p className="text-[10px] text-muted-foreground">
                       {p.time || "—"}
                     </p>
                   </div>
@@ -247,9 +256,9 @@ function LeaderboardModal({ open, onClose, leaderboard }) {
 function QuestionBody({ question, blurred = false }) {
   return (
     <div
-      className={`mb-4 rounded-2xl bg-neutral-50 p-5 transition-all duration-300 ${blurred ? "select-none" : ""}`}
+      className={`mb-4 rounded-2xl bg-muted/50 p-5 transition-all duration-300 ${blurred ? "select-none" : ""}`}
     >
-      <div className="mb-2.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+      <div className="mb-2.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
         {question.type === "image" ? (
           <ImageIcon size={12} />
         ) : (
@@ -260,7 +269,7 @@ function QuestionBody({ question, blurred = false }) {
 
       {question.type === "image" ? (
         <div
-          className={`relative rounded-xl overflow-hidden bg-neutral-100 ${blurred ? "blur-md" : ""}`}
+          className={`relative rounded-xl overflow-hidden bg-muted ${blurred ? "blur-md" : ""}`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -273,22 +282,22 @@ function QuestionBody({ question, blurred = false }) {
           />
           {/* Fallback placeholder when no image provided yet */}
           {!question.imageUrl && (
-            <div className="flex flex-col items-center justify-center h-44 gap-2 text-neutral-400">
+            <div className="flex flex-col items-center justify-center h-44 gap-2 text-muted-foreground">
               <ImageIcon size={32} />
               <span className="text-xs">Question image goes here</span>
             </div>
           )}
         </div>
       ) : (
-        <h3
+        <h4
           className={`text-lg font-semibold leading-snug transition-all duration-300 ${
             blurred
-              ? "blur-sm text-neutral-300 pointer-events-none"
-              : "text-neutral-900"
+              ? "blur-sm text-muted-foreground/50 pointer-events-none"
+              : "text-foreground"
           }`}
         >
           {question.text}
-        </h3>
+        </h4>
       )}
     </div>
   );
@@ -320,14 +329,14 @@ function OptionsList({
             onClick={() => !submitted && !blurred && onSelect(index)}
             className={`group relative flex items-center gap-3 overflow-hidden rounded-2xl border px-4 py-3.5 text-left transition-all duration-200 ${
               blurred
-                ? "border-neutral-100 bg-neutral-50 blur-[2px]"
+                ? "border-border bg-muted/50 blur-[2px]"
                 : showCorrect
-                  ? "border-green-600 bg-green-600 text-white"
+                  ? "border-green-600 bg-green-600 text-white dark:border-green-500 dark:bg-green-500"
                   : showWrong
                     ? "border-red-500 bg-red-500 text-white"
                     : isSelected
-                      ? "border-black bg-black text-white shadow-lg"
-                      : "border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-sm"
+                      ? "border-primary bg-primary text-primary-foreground shadow-lg"
+                      : "border-border bg-card hover:border-foreground/30 hover:shadow-sm"
             } ${submitted || blurred ? "cursor-default" : "cursor-pointer"}`}
           >
             <div
@@ -335,15 +344,15 @@ function OptionsList({
                 showCorrect || showWrong || (isSelected && !blurred)
                   ? "bg-white/20 text-white"
                   : blurred
-                    ? "bg-neutral-100 text-neutral-300"
-                    : "bg-neutral-100 text-neutral-600"
+                    ? "bg-muted text-muted-foreground/50"
+                    : "bg-muted text-muted-foreground"
               }`}
             >
               {option.label}
             </div>
             <span
               className={`text-sm font-medium ${
-                blurred ? "text-neutral-300" : ""
+                blurred ? "text-muted-foreground/50" : ""
               }`}
             >
               {option.value}
@@ -455,26 +464,26 @@ export default function TodaysQuestion() {
     const explanationSuffix = ` ${QUESTION.explanation}`;
     if (resultType === "correct")
       return {
-        bg: "bg-green-50 border border-green-200",
-        text: "text-green-800",
+        bg: "bg-green-50 border border-green-200 dark:bg-green-500/10 dark:border-green-500/30",
+        text: "text-green-800 dark:text-green-400",
         msg: `Correct! You answered in ${timeTaken}s. +${QUESTION.xp} XP earned 🎉${explanationSuffix}`,
       };
     if (resultType === "wrong")
       return {
-        bg: "bg-red-50 border border-red-200",
-        text: "text-red-800",
+        bg: "bg-red-50 border border-red-200 dark:bg-red-500/10 dark:border-red-500/30",
+        text: "text-red-800 dark:text-red-400",
         msg: `Not quite. The correct answer is option ${QUESTION.options[QUESTION.correctIndex].label}. ${QUESTION.explanation}`,
       };
     if (resultType === "timeout")
       return {
-        bg: "bg-orange-50 border border-orange-200",
-        text: "text-orange-800",
+        bg: "bg-orange-50 border border-orange-200 dark:bg-orange-500/10 dark:border-orange-500/30",
+        text: "text-orange-800 dark:text-orange-400",
         msg: `Time's up! The correct answer was option ${QUESTION.options[QUESTION.correctIndex].label}. ${QUESTION.explanation}`,
       };
     if (resultType === "skip")
       return {
-        bg: "bg-neutral-100 border border-neutral-200",
-        text: "text-neutral-700",
+        bg: "bg-muted border border-border",
+        text: "text-foreground",
         msg: `Skipped. The correct answer was option ${QUESTION.options[QUESTION.correctIndex].label}.`,
       };
   };
@@ -482,7 +491,7 @@ export default function TodaysQuestion() {
   const banner = resultBanner();
 
   return (
-    <>
+    <section className="bg-muted/30 py-16 sm:py-24">
       <canvas
         ref={canvasRef}
         className="fixed inset-0 pointer-events-none z-[200]"
@@ -493,31 +502,35 @@ export default function TodaysQuestion() {
         leaderboard={leaderboard}
       />
 
-      {/* Full-screen centering wrapper */}
-      <div className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-12 ">
-        <div className="w-full max-w-2xl mb-6 px-1">
+      <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-6 px-1">
           <div className="flex items-center gap-3 mb-1">
             <span className="text-2xl">🧠</span>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
               Today's Question
-            </h1>
-            <span className="ml-auto rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-600 whitespace-nowrap">
+            </h2>
+            <Badge
+              variant="outline"
+              className="ml-auto border-orange-200 bg-orange-100 text-orange-600 dark:border-orange-900 dark:bg-orange-500/15 dark:text-orange-400 whitespace-nowrap"
+            >
               JEE 2025
-            </span>
+            </Badge>
           </div>
-          <p className="text-sm text-neutral-400 pl-11">
+          <p className="text-sm text-muted-foreground pl-11">
             One question daily — answer fast, rank higher.
           </p>
-          <div className="mt-3 h-px bg-gradient-to-r from-neutral-200 via-neutral-100 to-transparent" />
+          <div className="mt-3 h-px bg-border" />
         </div>
+
         <motion.div
           initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-neutral-200 bg-white "
+          className="w-full overflow-hidden rounded-[28px] border border-border bg-card"
         >
           {/* Progress bar */}
-          <div className="">
+          <div className="h-1.5 w-full bg-muted">
             <motion.div
               initial={{ width: 0 }}
               animate={{
@@ -525,7 +538,7 @@ export default function TodaysQuestion() {
                   phase === "done" ? "100%" : phase === "quiz" ? "13%" : "0%",
               }}
               transition={{ duration: 0.8 }}
-              className="h-full bg-black rounded-r-full"
+              className="h-full bg-primary rounded-r-full"
             />
           </div>
 
@@ -541,17 +554,21 @@ export default function TodaysQuestion() {
                   transition={{ duration: 0.25 }}
                 >
                   {/* Subject + difficulty badges */}
-                  <div className="flex gap-2 mb-5">
-                    <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600">
-                      📚 {QUESTION.subject}
-                    </span>
-                    <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700">
+                  <div className="flex flex-wrap gap-2 mb-5">
+                    <Badge variant="secondary">📚 {QUESTION.subject}</Badge>
+                    <Badge
+                      variant="outline"
+                      className="border-orange-200 bg-orange-100 text-orange-700 dark:border-orange-900 dark:bg-orange-500/15 dark:text-orange-400"
+                    >
                       {QUESTION.difficulty}
-                    </span>
+                    </Badge>
                     {QUESTION.type === "image" && (
-                      <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 flex items-center gap-1">
+                      <Badge
+                        variant="outline"
+                        className="gap-1 border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-900 dark:bg-blue-500/15 dark:text-blue-400"
+                      >
                         <ImageIcon size={10} /> Image Q
-                      </span>
+                      </Badge>
                     )}
                   </div>
 
@@ -567,20 +584,21 @@ export default function TodaysQuestion() {
 
                   {/* CTA overlay */}
                   <div className="mt-8 flex flex-col items-center text-center gap-3">
-                    <div className="flex items-center gap-2 text-neutral-400 text-xs">
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs">
                       <Lock size={12} />
                       Question hidden until you start
                     </div>
-                    <motion.button
+                    <MotionButton
                       whileHover={{ scale: 1.03, y: -1 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={startQuiz}
-                      className="flex items-center gap-2 rounded-full bg-black px-8 py-3.5 text-sm font-semibold text-white shadow-lg mt-1"
+                      size="lg"
+                      className="gap-2 rounded-full px-8 h-12 text-sm shadow-lg mt-1"
                     >
                       <Play size={14} />
                       Start Challenge
-                    </motion.button>
-                    <p className="text-[11px] text-neutral-400 max-w-xs leading-relaxed">
+                    </MotionButton>
+                    <p className="text-[11px] text-muted-foreground max-w-xs leading-relaxed">
                       ⏱ This starts a <strong>90-second countdown</strong>. Your
                       score depends on how fast you answer correctly.
                     </p>
@@ -599,20 +617,24 @@ export default function TodaysQuestion() {
                   {/* Header */}
                   <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <div className="flex gap-2 mb-2.5">
-                        <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600">
-                          📚 {QUESTION.subject}
-                        </span>
-                        <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700">
+                      <div className="flex flex-wrap gap-2 mb-2.5">
+                        <Badge variant="secondary">📚 {QUESTION.subject}</Badge>
+                        <Badge
+                          variant="outline"
+                          className="border-orange-200 bg-orange-100 text-orange-700 dark:border-orange-900 dark:bg-orange-500/15 dark:text-orange-400"
+                        >
                           {QUESTION.difficulty}
-                        </span>
+                        </Badge>
                         {QUESTION.type === "image" && (
-                          <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 flex items-center gap-1">
+                          <Badge
+                            variant="outline"
+                            className="gap-1 border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-900 dark:bg-blue-500/15 dark:text-blue-400"
+                          >
                             <ImageIcon size={10} /> Image Q
-                          </span>
+                          </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-neutral-400">
+                      <p className="text-xs text-muted-foreground">
                         Question 1 of 1
                       </p>
                     </div>
@@ -621,8 +643,8 @@ export default function TodaysQuestion() {
                     <div
                       className={`flex items-center gap-2.5 rounded-2xl border px-4 py-2.5 transition-colors ${
                         secondsLeft <= 10 && !submitted
-                          ? "border-red-200 bg-red-50"
-                          : "border-neutral-200 bg-neutral-50"
+                          ? "border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10"
+                          : "border-border bg-muted/50"
                       }`}
                     >
                       <Clock3
@@ -630,11 +652,11 @@ export default function TodaysQuestion() {
                         className={
                           secondsLeft <= 10 && !submitted
                             ? "text-red-500"
-                            : "text-neutral-400"
+                            : "text-muted-foreground"
                         }
                       />
                       <div>
-                        <p className="text-[10px] text-neutral-400">
+                        <p className="text-[10px] text-muted-foreground">
                           Time left
                         </p>
                         <motion.p
@@ -647,8 +669,8 @@ export default function TodaysQuestion() {
                           transition={{ duration: 0.18 }}
                           className={`text-base font-semibold tabular-nums ${
                             secondsLeft <= 10 && !submitted
-                              ? "text-red-600"
-                              : ""
+                              ? "text-red-600 dark:text-red-400"
+                              : "text-foreground"
                           }`}
                         >
                           {formatTime(secondsLeft)}
@@ -661,20 +683,20 @@ export default function TodaysQuestion() {
                   <div className="mb-5">
                     <div
                       className={`h-[4px] w-full rounded-full transition-all ${
-                        phase === "done" ? "bg-black" : "bg-black/25"
+                        phase === "done" ? "bg-primary" : "bg-primary/25"
                       }`}
                     />
                   </div>
 
                   {/* KPI strip */}
-                  <div className="mb-5 grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-neutral-200 overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
+                  <div className="mb-5 grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-border overflow-hidden rounded-2xl border border-border bg-muted/50">
                     {kpis.map((kpi) => (
                       <div key={kpi.label} className="px-4 py-3">
-                        <div className="mb-1.5 flex items-center gap-1.5 text-[10px] text-neutral-400">
+                        <div className="mb-1.5 flex items-center gap-1.5 text-[10px] text-muted-foreground">
                           {kpi.icon}
                           {kpi.label}
                         </div>
-                        <p className="text-lg font-bold leading-none">
+                        <p className="text-lg font-bold leading-none text-foreground">
                           {kpi.value}
                         </p>
                         <p
@@ -712,32 +734,29 @@ export default function TodaysQuestion() {
                   {/* Actions */}
                   {!submitted ? (
                     <div className="mt-5 flex items-center justify-between flex-wrap gap-3">
-                      <button
+                      <Button
+                        variant="outline"
+                        className="rounded-full px-5"
                         onClick={handleSkip}
-                        className="rounded-full border border-neutral-200 px-5 py-2.5 text-sm font-medium text-neutral-500 transition hover:bg-neutral-100"
                       >
                         Skip
-                      </button>
+                      </Button>
                       <div className="flex items-center gap-2.5">
-                        <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
+                        <Badge className="bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400">
                           ⚡ +{QUESTION.xp} XP
-                        </span>
-                        <motion.button
+                        </Badge>
+                        <MotionButton
                           whileHover={
                             selected !== null ? { scale: 1.02, y: -1 } : {}
                           }
                           whileTap={selected !== null ? { scale: 0.98 } : {}}
                           disabled={selected === null}
                           onClick={handleSubmit}
-                          className={`flex items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-semibold transition ${
-                            selected === null
-                              ? "cursor-not-allowed bg-neutral-200 text-neutral-400"
-                              : "bg-black text-white shadow-lg"
-                          }`}
+                          className="gap-1.5 rounded-full px-6 shadow-lg"
                         >
                           Submit
                           <ChevronRight size={15} />
-                        </motion.button>
+                        </MotionButton>
                       </div>
                     </div>
                   ) : (
@@ -748,15 +767,16 @@ export default function TodaysQuestion() {
                       transition={{ delay: 0.35 }}
                       className="mt-5 flex justify-center"
                     >
-                      <motion.button
+                      <MotionButton
+                        variant="outline"
                         whileHover={{ scale: 1.02, y: -1 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setShowLeaderboard(true)}
-                        className="flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-6 py-2.5 text-sm font-semibold transition hover:bg-neutral-100"
+                        className="gap-2 rounded-full px-6"
                       >
                         <Trophy size={15} className="text-yellow-500" />
                         View Daily Leaderboard
-                      </motion.button>
+                      </MotionButton>
                     </motion.div>
                   )}
                 </motion.div>
@@ -765,6 +785,6 @@ export default function TodaysQuestion() {
           </div>
         </motion.div>
       </div>
-    </>
+    </section>
   );
 }

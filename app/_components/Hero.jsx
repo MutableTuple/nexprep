@@ -1,17 +1,21 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Flame, Star, Users, Zap, Trophy } from "lucide-react";
+import { ArrowRight, Flame, Users, Zap, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 
-const stats = [
-  { icon: Users, label: "Active Students", value: "18K+" },
-  { icon: Star, label: "Questions Solved", value: "250K+" },
-  { icon: Zap, label: "Avg Accuracy", value: "96%" },
-  { icon: Trophy, label: "XP Earned Today", value: "1.2M" },
+const features = [
+  { icon: Zap, value: "Daily Question", label: "A fresh challenge every day" },
+  { icon: Users, value: "1v1 Duels", label: "Battle another aspirant live" },
+  {
+    icon: Flame,
+    value: "Streaks & XP",
+    label: "Build consistency, get scored",
+  },
+  { icon: Trophy, value: "Free to Join", label: "No credit card required" },
 ];
 
 export default function Hero() {
@@ -85,7 +89,7 @@ export default function Hero() {
           </Button>
         </motion.div>
 
-        {/* Stats grid */}
+        {/* Feature grid */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -95,9 +99,9 @@ export default function Hero() {
           <Card className="w-full border-border shadow-sm">
             <CardContent className="p-0">
               <div className="grid grid-cols-2 sm:grid-cols-4">
-                {stats.map(({ icon: Icon, label, value }, i) => (
+                {features.map(({ icon: Icon, label, value }, i) => (
                   <div
-                    key={label}
+                    key={value}
                     className="flex flex-col items-center justify-center py-6 px-4 relative"
                   >
                     {/* Vertical separator between cols */}
@@ -109,7 +113,7 @@ export default function Hero() {
                       <div className="absolute top-0 left-1/4 w-1/2 h-px bg-border sm:hidden" />
                     )}
                     <Icon className="h-5 w-5 text-muted-foreground mb-2" />
-                    <span className="text-2xl sm:text-3xl font-bold text-foreground tabular-nums">
+                    <span className="text-base sm:text-lg font-bold text-foreground">
                       {value}
                     </span>
                     <span className="mt-1 text-xs text-muted-foreground text-center">
@@ -122,16 +126,18 @@ export default function Hero() {
           </Card>
         </motion.div>
 
-        {/* Social proof */}
+        {/* Early-access framing instead of fake social proof */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.55 }}
           className="mt-6 text-xs text-muted-foreground"
         >
-          Trusted by{" "}
-          <span className="font-semibold text-foreground">18,000+</span> JEE
-          aspirants across India
+          🚀 Just launched —{" "}
+          <span className="font-semibold text-foreground">
+            be one of the first
+          </span>{" "}
+          to claim a spot on the leaderboard.
         </motion.p>
       </div>
     </section>
