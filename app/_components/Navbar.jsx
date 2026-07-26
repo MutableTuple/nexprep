@@ -29,6 +29,7 @@ import { useUser } from "../_lib/AuthProvider";
 
 const links = [
   { name: "Problems", href: "/problems" },
+  { name: "Duel", href: "/duel" },
   { name: "Leaderboard", href: "/leaderboard" },
   { name: "Mock Tests", href: "/mock-tests" },
   { name: "Blog", href: "/blog" },

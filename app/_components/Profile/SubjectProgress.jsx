@@ -37,10 +37,12 @@ const SUBJECT_CONFIG = {
   },
 };
 
-export default function SubjectProgress() {
+export default function SubjectProgress({ userId: userIdProp }) {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { userId, loading: authLoading } = useUserId();
+  const { userId: viewerId } = useUserId();
+
+  const userId = userIdProp ?? viewerId;
 
   useEffect(() => {
     if (!userId) return;

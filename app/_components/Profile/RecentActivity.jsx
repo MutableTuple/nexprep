@@ -38,8 +38,9 @@ function GhostRow() {
   );
 }
 
-export default function RecentActivity() {
-  const { userId, loading: authLoading } = useUserId();
+export default function RecentActivity({ userId: userIdProp, isOwn = true }) {
+  const { userId: viewerId, loading: authLoading } = useUserId();
+  const userId = userIdProp ?? viewerId;
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -111,7 +112,9 @@ export default function RecentActivity() {
           </p>
         ) : activity.length === 0 ? (
           <p className="py-8 px-6 text-center text-sm text-muted-foreground">
-            No problems solved yet — start solving to see your activity here.
+            {isOwn
+              ? "No problems solved yet — start solving to see your activity here."
+              : "This user hasn't solved any problems yet."}
           </p>
         ) : (
           activity.map((item, i) => (

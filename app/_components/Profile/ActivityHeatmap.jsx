@@ -94,8 +94,9 @@ function formatDate(date) {
   });
 }
 
-function ActivityHeatmap() {
-  const { userId, loading: authLoading } = useUserId();
+function ActivityHeatmap({ userId: userIdProp }) {
+  const { userId: viewerId, loading: authLoading } = useUserId();
+  const userId = userIdProp ?? viewerId;
   const [countsByDate, setCountsByDate] = useState(new Map());
   const [dataLoading, setDataLoading] = useState(true);
 

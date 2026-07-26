@@ -1120,3 +1120,11 @@ export async function getSolvedStatusMap(userId, questionIds) {
   }
   return map;
 }
+export async function getPublishedQuestionCount() {
+  const { count, error } = await supabase
+    .from("questions")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "published");
+  if (error) throw error;
+  return count ?? 0;
+}

@@ -6,7 +6,7 @@ import RecentActivity from "./Profile/RecentActivity";
 import { Progress } from "@/components/ui/progress";
 import BadgesGrid from "./Profile/BadgesGrid";
 import FriendsTab from "./Profile/FriendsTab";
-
+import { Trophy } from "lucide-react";
 export default function ProfileTabs({
   BADGES,
   profileUserId,
@@ -31,30 +31,30 @@ export default function ProfileTabs({
       </TabsList>
 
       <TabsContent value="overview" className="mt-4 flex flex-col gap-4">
-        <SubjectProgress />
-        <ActivityHeatmap />
+        <SubjectProgress userId={profileUserId} />
+        <ActivityHeatmap userId={profileUserId} />
       </TabsContent>
 
       <TabsContent value="activity" className="mt-4">
-        <RecentActivity />
+        <RecentActivity userId={profileUserId} isOwn={isOwn} />
       </TabsContent>
 
-      <TabsContent value="badges" className="mt-4 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            {BADGES.filter((b) => b.earned).length} of {BADGES.length} badges
-            earned
-          </p>
-          <Progress
-            value={
-              (BADGES.filter((b) => b.earned).length / BADGES.length) * 100
-            }
-            className="w-32 h-2"
-          />
+      <TabsContent value="badges" className="mt-4">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border py-16 px-6 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
+            <Trophy size={20} className="text-muted-foreground" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              Badges are coming soon
+            </p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+              We're building achievements for streaks, milestones, and more.
+              Check back soon.
+            </p>
+          </div>
         </div>
-        <BadgesGrid BADGES={BADGES} />
       </TabsContent>
-
       <TabsContent value="friends" className="mt-4">
         <FriendsTab userId={profileUserId} viewerId={viewerId} isOwn={isOwn} />
       </TabsContent>

@@ -403,7 +403,7 @@ export default function SolveProblemScreen({ questionId }) {
                 revealedHints={revealedHints}
                 onReveal={() => setRevealedHints((h) => h + 1)}
               />
-              <YouTubeEmbed videoId={"TM-1xPdYJSA"} />
+              {/* <YouTubeEmbed videoId={"TM-1xPdYJSA"} /> */}
 
               {/* Similar questions live in the left column, not as a loose grid child */}
               <SimilarQuestions
