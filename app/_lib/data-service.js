@@ -5,7 +5,7 @@ const SELECT_LIST =
 
 const SELECT_FULL = "*";
 
-function buildSlug(topic) {
+export function buildSlug(topic) {
   return topic
     .toLowerCase()
     .replace(/\s+/g, "-")
@@ -136,6 +136,38 @@ export async function getAllQuestionIds() {
     id: q.id,
     problemname: buildSlug(q.topic),
   }));
+}
+
+// Supabase's JS client has no `.distinct()` — chapter/topic counts are low
+// enough (a few hundred rows per subject) that fetching everything and
+// grouping in JS is cheap and avoids needing a DB view/RPC for this.
+export async function getChapterTaxonomy(subject) {
+  const { data, error } = await supabase
+    .from("questions")
+    .select("chapter, topic")
+    .eq("status", "published")
+    .eq("subject", subject);
+  if (error) throw error;
+
+  const byChapter = new Map();
+  for (const row of data ?? []) {
+    if (!row.chapter) continue;
+    if (!byChapter.has(row.chapter)) {
+      byChapter.set(row.chapter, { count: 0, topics: new Set() });
+    }
+    const entry = byChapter.get(row.chapter);
+    entry.count += 1;
+    if (row.topic) entry.topics.add(row.topic);
+  }
+
+  return [...byChapter.entries()]
+    .map(([chapter, { count, topics }]) => ({
+      chapter,
+      slug: buildSlug(chapter),
+      count,
+      topics: [...topics].sort(),
+    }))
+    .sort((a, b) => a.chapter.localeCompare(b.chapter));
 }
 export async function getSimilarQuestions({
   subject,
@@ -857,6 +889,7 @@ export async function getPeriodLeaderboard(sinceDate, limit = 100) {
 }
 export async function getQuestionsPaged({
   subject,
+  chapter,
   difficulties = [],
   search = "",
   page = 1,
@@ -871,6 +904,10 @@ export async function getQuestionsPaged({
 
   if (subject && subject !== "All") {
     query = query.eq("subject", subject);
+  }
+
+  if (chapter) {
+    query = query.eq("chapter", chapter);
   }
 
   if (difficulties.length > 0) {

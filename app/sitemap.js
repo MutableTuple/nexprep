@@ -1,5 +1,11 @@
-import { getAllQuestionIds } from "@/app/_lib/data-service";
+import { getAllQuestionIds, getChapterTaxonomy } from "@/app/_lib/data-service";
 import { getAllPosts } from "@/app/_data/posts";
+
+const CHAPTER_SUBJECTS = [
+  { subject: "Physics", slug: "physics" },
+  { subject: "Chemistry", slug: "chemistry" },
+  { subject: "Mathematics", slug: "maths" },
+];
 
 const SITE_URL = "https://rankgrind.com";
 
@@ -45,5 +51,27 @@ export default async function sitemap() {
     priority: 0.7,
   }));
 
-  return [...staticEntries, ...questionEntries, ...blogEntries];
+  let chapterEntries = [];
+  try {
+    const chaptersBySubject = await Promise.all(
+      CHAPTER_SUBJECTS.map(({ subject }) => getChapterTaxonomy(subject)),
+    );
+    chapterEntries = chaptersBySubject.flatMap((chapters, i) =>
+      chapters.map((c) => ({
+        url: `${SITE_URL}/${CHAPTER_SUBJECTS[i].slug}/${c.slug}`,
+        lastModified: new Date(),
+        changeFrequency: "weekly",
+        priority: 0.7,
+      })),
+    );
+  } catch (err) {
+    console.error("Failed to build chapter sitemap entries:", err);
+  }
+
+  return [
+    ...staticEntries,
+    ...questionEntries,
+    ...blogEntries,
+    ...chapterEntries,
+  ];
 }

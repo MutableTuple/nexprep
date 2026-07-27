@@ -84,7 +84,7 @@ export const metadata = {
   manifest: "/site.webmanifest",
   // TODO: add your Google Search Console property for this domain and
   // paste the real verification code it gives you, e.g.:
-  // verification: { google: "abc123..." },
+  verification: { google: "abc123..." },
 };
 
 export const viewport = {

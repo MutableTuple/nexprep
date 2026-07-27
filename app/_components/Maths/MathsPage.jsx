@@ -39,6 +39,7 @@ export default function MathsPage({
   difficulty,
   search,
   pageSize,
+  chapters = [],
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -98,6 +99,20 @@ export default function MathsPage({
               : `${count} question${count === 1 ? "" : "s"} found`}
           </p>
         </div>
+
+        {chapters.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {chapters.map((c) => (
+              <Link
+                key={c.slug}
+                href={`/maths/${c.slug}`}
+                className="text-xs px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+              >
+                {c.chapter}
+              </Link>
+            ))}
+          </div>
+        )}
 
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">

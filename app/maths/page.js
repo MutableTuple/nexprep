@@ -1,16 +1,26 @@
 import MathsPage from "../_components/Maths/MathsPage";
-import { getQuestionsPaged } from "@/app/_lib/data-service";
+import { getQuestionsPaged, getChapterTaxonomy } from "@/app/_lib/data-service";
 
 const PAGE_SIZE = 12;
 
+const TITLE = "Maths Questions — Practice JEE Maths Problems";
+const DESCRIPTION =
+  "Practice Maths problems for JEE Main & Advanced. Filter by difficulty, search by topic, and solve questions with instant XP and streak tracking.";
+
 export async function generateMetadata({ searchParams }) {
-  const { search } = await searchParams;
+  const sp = await searchParams;
+  const isFiltered = Boolean(sp?.search) || (sp?.page && sp.page !== "1");
+
   return {
-    title: search
-      ? `"${search}" — Maths Questions | JEE Platform`
-      : "Maths Questions — Practice JEE Maths Problems | JEE Platform",
-    description:
-      "Practice Maths problems for JEE Main & Advanced. Filter by difficulty, search by topic, and solve questions with instant XP and streak tracking.",
+    title: sp?.search ? `"${sp.search}" — Maths Questions` : TITLE,
+    description: DESCRIPTION,
+    alternates: { canonical: "/maths" },
+    openGraph: {
+      title: TITLE,
+      description: DESCRIPTION,
+      url: "/maths",
+    },
+    robots: isFiltered ? { index: false, follow: true } : undefined,
   };
 }
 
@@ -20,13 +30,16 @@ export default async function Page({ searchParams }) {
   const difficulty = sp.difficulty ?? "All";
   const search = sp.search ?? "";
 
-  const { questions, count } = await getQuestionsPaged({
-    subject: "Mathematics",
-    difficulties: difficulty === "All" ? [] : [difficulty],
-    search,
-    page,
-    limit: PAGE_SIZE,
-  });
+  const [{ questions, count }, chapters] = await Promise.all([
+    getQuestionsPaged({
+      subject: "Mathematics",
+      difficulties: difficulty === "All" ? [] : [difficulty],
+      search,
+      page,
+      limit: PAGE_SIZE,
+    }),
+    getChapterTaxonomy("Mathematics").catch(() => []),
+  ]);
 
   return (
     <MathsPage
@@ -36,6 +49,7 @@ export default async function Page({ searchParams }) {
       difficulty={difficulty}
       search={search}
       pageSize={PAGE_SIZE}
+      chapters={chapters}
     />
   );
 }
