@@ -43,49 +43,40 @@ const studyLinks = [
 const examLinks = [
   { name: "JEE Main", href: "/jee-main" },
   { name: "JEE Advanced", href: "/jee-advanced" },
-  { name: "Question Bank", href: "/question-bank" },
+  { name: "BITSAT", href: "/bitsat" },
+  { name: "Question Bank", href: "/problems" },
   { name: "Mock Tests", href: "/mock-tests" },
-  { name: "Previous Year Papers", href: "/previous-year-papers" },
-  { name: "Chapter Tests", href: "/chapter-tests" },
-  { name: "Full Tests", href: "/full-tests" },
 ];
 
 const resourceLinks = [
-  { name: "Study Planner", href: "/study-planner" },
-  { name: "AI Doubt Solver", href: "/doubt-solving" },
   { name: "Blog", href: "/blog" },
-  { name: "Rank Predictor", href: "/rank-predictor" },
+  { name: "Engineering Colleges", href: "/colleges" },
   { name: "College Predictor", href: "/college-predictor" },
-  { name: "Cutoff Trends", href: "/cutoff-trends" },
-  { name: "Exam Calendar", href: "/exam-calendar" },
 ];
 
 const companyLinks = [
   { name: "About", href: "/about" },
   { name: "Contact", href: "/contact" },
-  { name: "Privacy Policy", href: "/privacy-policy" },
-  { name: "Terms of Service", href: "/terms" },
-  { name: "Refund Policy", href: "/refund-policy" },
   { name: "Sitemap", href: "/sitemap.xml" },
 ];
 
+// Every entry here must point at a page that actually exists — this used to
+// be a naive `keyword.toLowerCase().replace(/\s+/g, "-")` slug, which
+// silently 404'd for any keyword that didn't happen to match a real route
+// (e.g. "JEE PYQs" -> /jee-pyqs, never built). Explicit hrefs so a bad link
+// can't sneak back in just by editing this list.
 const seoKeywords = [
-  "JEE Main 2026",
-  "JEE Advanced",
-  "JEE PYQs",
-  "Physics Questions",
-  "Chemistry Questions",
-  "Maths Questions",
-  "Mock Test",
-  "NCERT Solutions",
-  "Chapter Wise Tests",
-  "Question Bank",
-  "Study Planner",
-  "JEE Preparation",
-  "Formula Sheets",
-  "JEE Notes",
-  "College Predictor",
-  "Rank Predictor",
+  { name: "JEE Main 2026", href: "/jee-main" },
+  { name: "JEE Advanced", href: "/jee-advanced" },
+  { name: "Physics Questions", href: "/physics" },
+  { name: "Chemistry Questions", href: "/chemistry" },
+  { name: "Maths Questions", href: "/maths" },
+  { name: "Mock Test", href: "/mock-tests" },
+  { name: "Question Bank", href: "/problems" },
+  { name: "JEE Preparation", href: "/problems" },
+  { name: "BITSAT Questions", href: "/bitsat" },
+  { name: "Engineering Colleges in India", href: "/colleges" },
+  { name: "JEE College Predictor", href: "/college-predictor" },
 ];
 
 const features = [
@@ -141,9 +132,11 @@ const socials = [
   { icon: FaLinkedinIn, href: "#", label: "LinkedIn" },
 ];
 
+// Privacy/Terms/Refund intentionally omitted until real policy content
+// exists — a live link to a page making unverified legal claims is worse
+// than no link at all.
 const legalLinks = [
-  { name: "Privacy", href: "/privacy-policy" },
-  { name: "Terms", href: "/terms" },
+  { name: "About", href: "/about" },
   { name: "Contact", href: "/contact" },
   { name: "Blog", href: "/blog" },
   { name: "Sitemap", href: "/sitemap.xml" },
@@ -366,14 +359,14 @@ export default function Footer() {
             role="list"
             aria-label="Popular search topics"
           >
-            {seoKeywords.map((keyword) => (
+            {seoKeywords.map(({ name, href }) => (
               <Link
-                key={keyword}
-                href={`/${keyword.toLowerCase().replace(/\s+/g, "-")}`}
+                key={name}
+                href={href}
                 role="listitem"
                 className="rounded-full border border-white/10 bg-white/[0.03] px-3 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm text-zinc-400 transition hover:border-white/20 hover:bg-white/5 hover:text-white"
               >
-                {keyword}
+                {name}
               </Link>
             ))}
           </div>

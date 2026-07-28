@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Clock, Zap, ChevronRight, Home } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { buildChapterFaqs } from "@/app/_lib/faq";
+import FaqSection from "@/app/_components/FaqSection";
 
 const DIFFICULTY_BADGE = {
   Easy: "secondary",
@@ -110,6 +112,17 @@ export default function ChapterHubPage({
             ))}
           </div>
         )}
+
+        <FaqSection
+          faqs={buildChapterFaqs({
+            subject,
+            subjectSlug,
+            chapter,
+            count,
+            topics,
+          })}
+          heading={`${chapter} — frequently asked questions`}
+        />
 
         {siblingChapters?.length > 0 && (
           <div className="pt-6 border-t border-border">

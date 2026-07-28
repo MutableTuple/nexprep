@@ -890,6 +890,7 @@ export async function getPeriodLeaderboard(sinceDate, limit = 100) {
 export async function getQuestionsPaged({
   subject,
   chapter,
+  exam,
   difficulties = [],
   search = "",
   page = 1,
@@ -908,6 +909,10 @@ export async function getQuestionsPaged({
 
   if (chapter) {
     query = query.eq("chapter", chapter);
+  }
+
+  if (exam) {
+    query = query.eq("exam", exam);
   }
 
   if (difficulties.length > 0) {
