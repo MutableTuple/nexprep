@@ -1,9 +1,11 @@
 import ProblemScreen from "@/app/_components/Problems/ProblemScreen";
 import React from "react";
 
-const TITLE = "Practice Problems | RankGrind";
+// The root layout applies a "%s | rankgrind.com" template, so the brand must
+// NOT be repeated here — it rendered as "… | RankGrind | rankgrind.com".
+const TITLE = "JEE Practice Questions — Physics, Chemistry & Maths";
 const DESCRIPTION =
-  "Browse and solve practice problems across topics — track your XP, streaks, and progress.";
+  "Browse and solve free JEE Main & Advanced practice questions across Physics, Chemistry and Maths, with hints, step-by-step solutions, and XP and streak tracking.";
 
 export async function generateMetadata({ searchParams }) {
   const sp = await searchParams;

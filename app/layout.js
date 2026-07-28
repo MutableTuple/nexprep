@@ -109,6 +109,34 @@ const structuredData = {
   },
 };
 
+// Declares the site's primary sections. Sitelinks are chosen algorithmically
+// and cannot be requested, but this is the supported way to state which
+// destinations are the main ones. Every entry must be indexable — listing a
+// noindex route (e.g. /duel, /login) would describe a page Google can never
+// surface.
+const siteNavigation = [
+  { name: "Practice Problems", url: `${SITE_URL}/problems` },
+  { name: "College Predictor", url: `${SITE_URL}/college-predictor` },
+  { name: "Engineering Colleges", url: `${SITE_URL}/colleges` },
+  { name: "JEE Main", url: `${SITE_URL}/jee-main` },
+  { name: "JEE Advanced", url: `${SITE_URL}/jee-advanced` },
+  { name: "Physics", url: `${SITE_URL}/physics` },
+  { name: "Chemistry", url: `${SITE_URL}/chemistry` },
+  { name: "Maths", url: `${SITE_URL}/maths` },
+  { name: "Leaderboard", url: `${SITE_URL}/leaderboard` },
+  { name: "Blog", url: `${SITE_URL}/blog` },
+].map((item, i) => ({
+  "@type": "SiteNavigationElement",
+  position: i + 1,
+  name: item.name,
+  url: item.url,
+}));
+
+const siteNavigationLd = {
+  "@context": "https://schema.org",
+  "@graph": siteNavigation,
+};
+
 export default async function RootLayout({ children }) {
   const supabase = await createClient();
   const {
@@ -125,6 +153,12 @@ export default async function RootLayout({ children }) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(siteNavigationLd),
+          }}
         />
       </head>
       <body className="min-h-screen bg-background font-sans text-foreground">

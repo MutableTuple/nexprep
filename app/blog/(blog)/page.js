@@ -1,27 +1,28 @@
 import BlogPage from "@/app/_components/Blog/BlogPage";
 import React from "react";
 
+const DESCRIPTION =
+  "Practical guides, exam strategy, and problem-solving tips for JEE Main & Advanced aspirants — from the RankGrind team.";
+
 export const metadata = {
-  title: "Blog | RankGrind — Tips, Strategy & Study Guides",
-  description:
-    "Practical guides, exam strategy, and problem-solving tips to help you prepare smarter and track your progress on RankGrind.",
-  alternates: {
-    canonical: "https://rankgrind.com/blog",
-  },
+  // No brand suffix here: the root layout applies "%s | rankgrind.com", so
+  // adding it again rendered "Blog | RankGrind — … | rankgrind.com".
+  title: "Blog — JEE Tips, Strategy & Study Guides",
+  description: DESCRIPTION,
+  alternates: { canonical: "/blog" },
   openGraph: {
-    title: "Blog | RankGrind",
-    description:
-      "Practical guides, exam strategy, and problem-solving tips to help you prepare smarter.",
-    url: "https://rankgrind.com/blog",
+    title: "Blog — JEE Tips, Strategy & Study Guides",
+    description: DESCRIPTION,
+    url: "/blog",
     type: "website",
-    images: ["/og/blog-default.png"],
+    // No `images` key: listing one here would override the generated
+    // opengraph-image.jsx in this folder. The old value pointed at
+    // /og/blog-default.png, which does not exist.
   },
   twitter: {
     card: "summary_large_image",
-    title: "Blog | RankGrind",
-    description:
-      "Practical guides, exam strategy, and problem-solving tips to help you prepare smarter.",
-    images: ["/og/blog-default.png"],
+    title: "Blog — JEE Tips, Strategy & Study Guides",
+    description: DESCRIPTION,
   },
   robots: {
     index: true,

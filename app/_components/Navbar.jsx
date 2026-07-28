@@ -27,11 +27,18 @@ import NotificationsDropdown from "./NotificationDropdown";
 import ProfileDropdown from "./ProfileDropdown";
 import { useUser } from "../_lib/AuthProvider";
 
+// Primary nav is the strongest structural signal Google uses when picking
+// sitelinks, so the indexable, high-intent destinations belong here — not
+// only the in-app features. (/duel is noindex and can never be chosen as a
+// sitelink regardless of its position here; Mock Tests is still a
+// coming-soon stub, so it is demoted to the footer rather than occupying a
+// primary slot.)
 const links = [
   { name: "Problems", href: "/problems" },
+  { name: "College Predictor", href: "/college-predictor" },
+  { name: "Colleges", href: "/colleges" },
   { name: "Duel", href: "/duel" },
   { name: "Leaderboard", href: "/leaderboard" },
-  { name: "Mock Tests", href: "/mock-tests" },
   { name: "Blog", href: "/blog" },
 ];
 
@@ -136,7 +143,10 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop nav */}
-        <NavigationMenu className="hidden md:flex">
+        {/* Desktop nav switches on at lg, not md: at 768px the logo (221px)
+            and auth buttons (222px) alone leave too little room, so the row
+            overflowed horizontally. Tablets get the sheet menu instead. */}
+        <NavigationMenu className="hidden lg:flex">
           <NavigationMenuList className="gap-1">
             {links.map((link) => (
               <NavigationMenuItem key={link.name}>
@@ -159,7 +169,7 @@ export default function Navbar() {
         </NavigationMenu>
 
         {/* Desktop right */}
-        <div className="hidden md:flex items-center gap-2">
+        <div className="hidden lg:flex items-center gap-2">
           <ThemeToggle />
           <AuthSlot
             loading={loading}
@@ -191,7 +201,7 @@ export default function Navbar() {
         </div>
 
         {/* Mobile right */}
-        <div className="flex items-center gap-1 md:hidden">
+        <div className="flex items-center gap-1 lg:hidden">
           <ThemeToggle />
           <AuthSlot
             loading={loading}
