@@ -23,7 +23,11 @@ export async function generateMetadata({ searchParams }) {
     description: DESCRIPTION,
     alternates: { canonical: "/bitsat" },
     openGraph: { title: TITLE, description: DESCRIPTION, url: "/bitsat" },
-    twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
+    twitter: {
+      card: "summary_large_image",
+      title: TITLE,
+      description: DESCRIPTION,
+    },
     robots: isFiltered ? { index: false, follow: true } : undefined,
   };
 }
@@ -35,7 +39,10 @@ export default async function Page({ searchParams }) {
   const difficulty = sp.difficulty ?? "All";
   const search = sp.search ?? "";
   const isUnfiltered =
-    !sp.search && !sp.subject && !sp.difficulty && (!sp.page || sp.page === "1");
+    !sp.search &&
+    !sp.subject &&
+    !sp.difficulty &&
+    (!sp.page || sp.page === "1");
 
   const { questions, count } = await getQuestionsPaged({
     exam: EXAM,
@@ -54,8 +61,18 @@ export default async function Page({ searchParams }) {
     breadcrumb: {
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: "https://rankgrind.com" },
-        { "@type": "ListItem", position: 2, name: EXAM, item: "https://rankgrind.com/bitsat" },
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: "https://rankgrind.com",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: EXAM,
+          item: "https://rankgrind.com/bitsat",
+        },
       ],
     },
   };

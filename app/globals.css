@@ -147,3 +147,29 @@
 .katex-display > .katex {
   white-space: nowrap;
 }
+@keyframes zoomFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoomScaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.zoom-fade-in {
+  animation: zoomFadeIn 0.15s ease;
+}
+.zoom-scale-in {
+  animation: zoomScaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}

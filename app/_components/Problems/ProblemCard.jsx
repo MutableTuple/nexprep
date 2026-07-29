@@ -1,6 +1,32 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import ZoomableImage from "./ZoomableImage";
 import MarkdownRenderer from "../MarkdownRenderer";
+
+/**
+ * `images` may arrive as:
+ *   - a JSON string:  '["https://.../a.png"]'
+ *   - an array of URL strings
+ *   - an array of { url, alt, caption } objects
+ * Normalize all three into [{ url, alt?, caption? }].
+ */
+function normalizeImages(images) {
+  let raw = images;
+
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw || "[]");
+    } catch {
+      raw = [];
+    }
+  }
+
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((img) => (typeof img === "string" ? { url: img } : img))
+    .filter((img) => img && img.url);
+}
+
 export default function ProblemCard({
   number,
   title,
@@ -8,8 +34,10 @@ export default function ProblemCard({
   body,
   images = [],
 }) {
+  const imageList = normalizeImages(images);
+
   return (
-    <Card className="">
+    <Card>
       <CardHeader className="border-b px-5 pt-5 pb-5 sm:px-7 sm:pt-6 flex-row items-start gap-4 space-y-0">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary font-black text-primary-foreground sm:h-11 sm:w-11">
           {number}
@@ -41,11 +69,11 @@ export default function ProblemCard({
           {body}
         </MarkdownRenderer>
 
-        {images.length > 0 && (
+        {imageList.length > 0 && (
           <div className="mt-8 space-y-6">
-            {images.map((img, i) => (
+            {imageList.map((img, i) => (
               <div
-                key={i}
+                key={img.url ?? i}
                 className="overflow-hidden rounded-2xl border bg-muted/40 p-5"
               >
                 <ZoomableImage
