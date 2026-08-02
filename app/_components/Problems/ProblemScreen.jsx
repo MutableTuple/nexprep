@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight, NotebookPen } from "lucide-react";
 import { Spinner } from "../Spinner";
-import { getQuestions } from "@/app/_lib/data-service";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { getQuestions, getUserPreferences } from "@/app/_lib/data-service";
 import { useUserId } from "@/app/_lib/AuthProvider";
+import { trackEvent } from "@/app/_lib/analytics";
 import HeroSection from "./HeroSection";
 import SearchBar from "./SearchBar";
 import DifficultyFilter from "./DifficultyFilter";
@@ -15,6 +19,7 @@ import EmptyState from "./EmptyState";
 import ErrorState from "./ErrorState";
 import LoadingState from "./LoadingState";
 import QuestionList from "./QuestionList";
+import GoalsProgress from "./GoalsProgress";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -47,6 +52,14 @@ export default function ProblemScreen() {
   const [activeDiffs, setActiveDiffs] = useState([]);
   const [statusFilter, setStatusFilter] = useState(null); // null | "unsolved" | "incorrect" | "solved"
   const [page, setPage] = useState(1);
+  const [showInline, setShowInline] = useState(false); // question cards default expanded vs click-through
+
+  function handleShowInlineChange(next) {
+    setShowInline(next);
+    trackEvent("problem_list_display_mode_changed", {
+      mode: next ? "inline" : "click_through",
+    });
+  }
 
   const [questions, setQuestions] = useState([]);
   const [hasMore, setHasMore] = useState(false);
@@ -56,6 +69,22 @@ export default function ProblemScreen() {
   const debouncedQuery = useDebounce(query, 400);
   const abortRef = useRef(null);
   const { userId, loading: authLoading } = useUserId();
+
+  // Apply the user's saved default-subject preference once, and only if
+  // they haven't already picked a subject themselves by the time it loads.
+  const appliedDefaultSubjectRef = useRef(false);
+  useEffect(() => {
+    if (authLoading || !userId || appliedDefaultSubjectRef.current) return;
+    appliedDefaultSubjectRef.current = true;
+
+    getUserPreferences(userId).then((prefs) => {
+      if (prefs?.default_subject && SUBJECTS.includes(prefs.default_subject)) {
+        setActiveSubject((current) =>
+          current === "All" ? prefs.default_subject : current,
+        );
+      }
+    });
+  }, [authLoading, userId]);
 
   const fetchQuestions = useCallback(
     async (subject, difficulties, search, pageNum, forUserId) => {
@@ -164,6 +193,8 @@ export default function ProblemScreen() {
       <HeroSection />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-8 py-6 sm:py-8 flex flex-col gap-6">
+        <GoalsProgress userId={userId} />
+
         <div className="flex flex-col gap-3 sm:flex-row">
           <SearchBar
             query={query}
@@ -183,7 +214,31 @@ export default function ProblemScreen() {
           onChange={handleSubjectChange}
         />
 
-        <StatusFilter active={statusFilter} onChange={setStatusFilter} />
+        <div className="flex items-center gap-2.5">
+          <Switch
+            id="show-inline-toggle"
+            checked={showInline}
+            onCheckedChange={handleShowInlineChange}
+          />
+          <Label htmlFor="show-inline-toggle" className="text-sm font-normal">
+            {showInline
+              ? "Showing questions inline"
+              : "Click a question to open it"}
+          </Label>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <StatusFilter active={statusFilter} onChange={setStatusFilter} />
+          {userId && (
+            <Link
+              href="/error-notebook"
+              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <NotebookPen size={15} />
+              Review your mistakes
+            </Link>
+          )}
+        </div>
 
         <ActiveFilters
           activeSubject={activeSubject}
@@ -236,7 +291,7 @@ export default function ProblemScreen() {
         ) : displayQuestions.length === 0 ? (
           <EmptyState onClear={clearAll} />
         ) : (
-          <QuestionList questions={displayQuestions} />
+          <QuestionList questions={displayQuestions} defaultExpanded={showInline} />
         )}
 
         {!error && !loading && questions.length > 0 && (

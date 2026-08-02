@@ -23,6 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import BadgeMiniRow from "./BadgeMiniRow";
+import { BADGE_CATALOG } from "@/app/_lib/badges";
 
 const EXAM_SUGGESTIONS = [
   "JEE Main",
@@ -53,7 +55,12 @@ export default function ProfileInfo({
   saving,
   usernameStatus,
   followCounts,
+  unlockedBadgeSlugs,
+  showBadges = true,
 }) {
+  const earnedBadges = showBadges
+    ? BADGE_CATALOG.filter((b) => unlockedBadgeSlugs?.has(b.slug))
+    : [];
   return (
     <div className="flex-1 min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -231,6 +238,8 @@ export default function ProfileInfo({
                   <MapPin size={11} /> {profile.location || "Unknown"}
                 </Badge>
               </div>
+
+              <BadgeMiniRow badges={earnedBadges} />
             </>
           )}
         </div>

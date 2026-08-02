@@ -26,6 +26,7 @@ import SimilarQuestions from "../SimilarQuestions";
 import YouTubeEmbed from "./YouTubeEmbed";
 import { useUser } from "@/app/_lib/AuthProvider";
 import { showToast } from "@/app/_lib/toast";
+import { useBadgeUnlockCheck } from "../BadgeUnlockProvider";
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -65,6 +66,7 @@ export default function SolveProblemScreen({ questionId }) {
 
   const { timerStr, seconds: elapsedSeconds } = useTimer(!submitted);
   const { user, loading: authLoading } = useUser();
+  const checkForBadges = useBadgeUnlockCheck();
 
   function celebrateStreak(streak) {
     confetti({
@@ -295,7 +297,9 @@ export default function SolveProblemScreen({ questionId }) {
       selected_option: selectedOption,
     })
       .then(() => {
-        if (!user || !shouldCelebrate) return;
+        if (!user) return;
+        checkForBadges(user.id);
+        if (!shouldCelebrate) return;
         return getUserStats(user.id).then((stats) => {
           celebrateStreak(stats?.streak ?? 1);
         });

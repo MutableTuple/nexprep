@@ -1,47 +1,48 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Badge, Lock } from "lucide-react";
-import React from "react";
+import { Lock } from "lucide-react";
+import BadgeIcon from "./BadgeIcon";
+import { BADGE_CATALOG } from "@/app/_lib/badges";
 
-export default function BadgesGrid({ BADGES }) {
+export default function BadgesGrid({ unlockedSlugs = new Set() }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-      {BADGES.map((badge) => {
-        const Icon = badge.icon;
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+      {BADGE_CATALOG.map((badge) => {
+        const earned = unlockedSlugs.has(badge.slug);
         return (
           <Card
-            key={badge.id}
+            key={badge.slug}
             className={cn(
-              "bg-card border-border shadow-none rounded-2xl p-4 flex flex-col items-center text-center gap-3 transition-all",
-              !badge.earned && "opacity-40 grayscale",
+              "flex flex-col items-center gap-3 rounded-2xl border-border p-4 text-center shadow-none transition-all",
+              !earned && "opacity-60",
             )}
           >
-            <CardContent className="p-0 flex flex-col items-center gap-2 w-full">
-              <div
-                className={cn(
-                  "w-12 h-12 rounded-2xl flex items-center justify-center",
-                  badge.bg,
-                )}
-              >
-                <Icon size={22} className={badge.color} />
-              </div>
+            <CardContent className="flex w-full flex-col items-center gap-2 p-0">
+              <BadgeIcon
+                icon={badge.icon}
+                tier={badge.tier}
+                colors={badge.colors}
+                size={52}
+                locked={!earned}
+              />
               <div>
-                <p className="text-sm font-semibold text-foreground flex items-center gap-1 justify-center">
+                <p className="flex items-center justify-center gap-1 text-sm font-semibold text-foreground">
                   {badge.name}
-                  {!badge.earned && (
+                  {!earned && (
                     <Lock size={11} className="text-muted-foreground" />
                   )}
                 </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
                   {badge.desc}
                 </p>
               </div>
-              {badge.earned && (
+              {earned && (
                 <Badge
                   variant="secondary"
-                  className="text-[10px] px-2 py-0 rounded-full"
+                  className="rounded-full px-2 py-0 text-[10px] capitalize"
                 >
-                  Earned
+                  {badge.tier}
                 </Badge>
               )}
             </CardContent>

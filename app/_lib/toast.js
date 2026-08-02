@@ -13,6 +13,7 @@ const PALETTE = {
   green: "#16a34a",
   red: "#dc2626",
   blue: "#2563eb",
+  violet: "#7c3aed",
 };
 
 function themed(title, { description, icon, duration = 3000, bg }) {
@@ -88,5 +89,13 @@ export const showToast = {
       icon: saved ? "🔖" : "📄",
       duration: 2000,
       bg: PALETTE.blue,
+    }),
+
+  goal: (title, description) =>
+    themed(title, {
+      description,
+      icon: "🎉",
+      duration: 4500,
+      bg: PALETTE.violet,
     }),
 };

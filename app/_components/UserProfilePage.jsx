@@ -1,19 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, memo } from "react";
-import {
-  Flame,
-  Zap,
-  Trophy,
-  Target,
-  Crosshair,
-  Hash,
-  Atom,
-  Star,
-  Moon,
-  Gauge,
-  Camera,
-} from "lucide-react";
+import { Flame, Zap, Trophy, Target, Lock, Camera } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { showToast } from "@/app/_lib/toast";
@@ -25,6 +13,8 @@ import {
   getUserStats,
   getMyRank,
   getFollowCounts,
+  listUserBadges,
+  getUserPrivacy,
 } from "@/app/_lib/data-service";
 import StatCard from "./Problems/StatCard";
 import ProfileTabs from "./ProfileTabs";
@@ -33,81 +23,6 @@ import { useUser } from "@/app/_lib/AuthProvider";
 import FollowButton from "./FollowButton";
 import AddFriendButton from "./AddFriendButton";
 import DuelButton from "./DuelButton";
-
-const BADGES = [
-  {
-    id: 1,
-    name: "First Blood",
-    desc: "Solved your first problem",
-    icon: Crosshair,
-    color: "text-red-500",
-    bg: "bg-red-100 dark:bg-red-950/40",
-    earned: true,
-  },
-  {
-    id: 2,
-    name: "On Fire",
-    desc: "7-day streak",
-    icon: Flame,
-    color: "text-orange-500",
-    bg: "bg-orange-100 dark:bg-orange-950/40",
-    earned: true,
-  },
-  {
-    id: 3,
-    name: "Century",
-    desc: "Solved 100 problems",
-    icon: Hash,
-    color: "text-blue-500",
-    bg: "bg-blue-100 dark:bg-blue-950/40",
-    earned: true,
-  },
-  {
-    id: 4,
-    name: "Physics Nerd",
-    desc: "Solved 200 physics problems",
-    icon: Atom,
-    color: "text-purple-500",
-    bg: "bg-purple-100 dark:bg-purple-950/40",
-    earned: true,
-  },
-  {
-    id: 5,
-    name: "Speed Demon",
-    desc: "Solved 10 problems in one day",
-    icon: Gauge,
-    color: "text-yellow-500",
-    bg: "bg-yellow-100 dark:bg-yellow-950/40",
-    earned: false,
-  },
-  {
-    id: 6,
-    name: "Perfectionist",
-    desc: "10 correct in a row",
-    icon: Star,
-    color: "text-amber-500",
-    bg: "bg-amber-100 dark:bg-amber-950/40",
-    earned: false,
-  },
-  {
-    id: 7,
-    name: "Night Owl",
-    desc: "Solved after midnight",
-    icon: Moon,
-    color: "text-indigo-500",
-    bg: "bg-indigo-100 dark:bg-indigo-950/40",
-    earned: false,
-  },
-  {
-    id: 8,
-    name: "Champion",
-    desc: "Rank #1 in a mock test",
-    icon: Trophy,
-    color: "text-amber-500",
-    bg: "bg-amber-100 dark:bg-amber-950/40",
-    earned: false,
-  },
-];
 
 const EMPTY_PROFILE = {
   name: "Anonymous",
@@ -144,7 +59,14 @@ function mapDbProfileToView(dbProfile, authUser) {
   };
 }
 
-const Body = memo(function Body({ stats, profileUserId, viewerId, isOwn }) {
+const Body = memo(function Body({
+  stats,
+  profileUserId,
+  viewerId,
+  isOwn,
+  unlockedBadgeSlugs,
+  showBadges,
+}) {
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-8 py-6 sm:py-8 flex flex-col gap-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -153,7 +75,8 @@ const Body = memo(function Body({ stats, profileUserId, viewerId, isOwn }) {
         ))}
       </div>
       <ProfileTabs
-        BADGES={BADGES}
+        unlockedBadgeSlugs={unlockedBadgeSlugs}
+        showBadges={showBadges}
         profileUserId={profileUserId}
         viewerId={viewerId}
         isOwn={isOwn}
@@ -176,6 +99,8 @@ export default function UserProfilePage({ username: targetUsername, onSave }) {
     followers: 0,
     following: 0,
   });
+  const [badgeSlugs, setBadgeSlugs] = useState(new Set());
+  const [privacy, setPrivacy] = useState(null);
 
   const [editMode, setEditMode] = useState(false);
   const [draft, setDraft] = useState(EMPTY_PROFILE);
@@ -239,6 +164,23 @@ export default function UserProfilePage({ username: targetUsername, onSave }) {
           } catch (err) {
             console.error("Failed to load follow counts:", err);
             if (!cancelled) setFollowCounts({ followers: 0, following: 0 });
+          }
+
+          try {
+            const [badges, privacySettings] = await Promise.all([
+              listUserBadges(profileUserId),
+              getUserPrivacy(profileUserId),
+            ]);
+            if (!cancelled) {
+              setBadgeSlugs(new Set((badges ?? []).map((b) => b.badge_slug)));
+              setPrivacy(privacySettings); // null means "no row yet" — defaults apply
+            }
+          } catch (err) {
+            console.error("Failed to load badges/privacy:", err);
+            if (!cancelled) {
+              setBadgeSlugs(new Set());
+              setPrivacy(null);
+            }
           }
         }
       } catch (err) {
@@ -439,6 +381,12 @@ export default function UserProfilePage({ username: targetUsername, onSave }) {
               updateDraft={updateDraft}
               saving={saving}
               usernameStatus={usernameStatus}
+              unlockedBadgeSlugs={badgeSlugs}
+              showBadges={
+                isOwn ||
+                (privacy?.profile_public !== false &&
+                  (privacy?.show_badges ?? true))
+              }
             />
 
             {!isOwn && user && (
@@ -452,12 +400,28 @@ export default function UserProfilePage({ username: targetUsername, onSave }) {
         </div>
       </div>
 
-      <Body
-        stats={displayStats}
-        profileUserId={profile.id}
-        viewerId={user?.id ?? null}
-        isOwn={isOwn}
-      />
+      {!isOwn && privacy?.profile_public === false ? (
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-4 py-20 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
+            <Lock size={20} className="text-muted-foreground" />
+          </div>
+          <p className="text-sm font-semibold text-foreground">
+            This profile is private
+          </p>
+          <p className="max-w-xs text-xs text-muted-foreground">
+            {shown.name} has chosen to keep their stats and activity private.
+          </p>
+        </div>
+      ) : (
+        <Body
+          stats={displayStats}
+          profileUserId={profile.id}
+          viewerId={user?.id ?? null}
+          isOwn={isOwn}
+          unlockedBadgeSlugs={badgeSlugs}
+          showBadges={privacy?.show_badges ?? true}
+        />
+      )}
     </div>
   );
 }

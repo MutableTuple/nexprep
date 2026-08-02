@@ -3,12 +3,13 @@ import React from "react";
 import SubjectProgress from "./Profile/SubjectProgress";
 import ActivityHeatmap from "./Profile/ActivityHeatmap";
 import RecentActivity from "./Profile/RecentActivity";
-import { Progress } from "@/components/ui/progress";
 import BadgesGrid from "./Profile/BadgesGrid";
 import FriendsTab from "./Profile/FriendsTab";
-import { Trophy } from "lucide-react";
+import { EyeOff } from "lucide-react";
+
 export default function ProfileTabs({
-  BADGES,
+  unlockedBadgeSlugs,
+  showBadges,
   profileUserId,
   viewerId,
   isOwn,
@@ -40,20 +41,18 @@ export default function ProfileTabs({
       </TabsContent>
 
       <TabsContent value="badges" className="mt-4">
-        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border py-16 px-6 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
-            <Trophy size={20} className="text-muted-foreground" />
-          </div>
-          <div>
+        {showBadges || isOwn ? (
+          <BadgesGrid unlockedSlugs={unlockedBadgeSlugs} />
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border py-16 px-6 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
+              <EyeOff size={20} className="text-muted-foreground" />
+            </div>
             <p className="text-sm font-semibold text-foreground">
-              Badges are coming soon
-            </p>
-            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-              We're building achievements for streaks, milestones, and more.
-              Check back soon.
+              This user has hidden their badges
             </p>
           </div>
-        </div>
+        )}
       </TabsContent>
       <TabsContent value="friends" className="mt-4">
         <FriendsTab userId={profileUserId} viewerId={viewerId} isOwn={isOwn} />

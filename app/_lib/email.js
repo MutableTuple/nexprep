@@ -7,9 +7,11 @@
 
 import { Resend } from "resend";
 import DailyQuestion from "@/emails/DailyQuestion";
+import DailyDigest from "@/emails/DailyDigest";
 import FriendRequest from "@/emails/FriendRequest";
 import InactivityNudge from "@/emails/InactivityNudge";
 import NewFollower from "@/emails/NewFollower";
+import BadgeUnlocked from "@/emails/BadgeUnlocked";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -40,6 +42,14 @@ export async function sendDailyQuestionEmail(to, props) {
   });
 }
 
+export async function sendDailyDigestEmail(to, props) {
+  return send({
+    to,
+    subject: "📬 Your daily rankgrind update",
+    react: <DailyDigest {...props} />,
+  });
+}
+
 export async function sendFriendRequestEmail(to, props) {
   return send({
     to,
@@ -61,5 +71,13 @@ export async function sendNewFollowerEmail(to, props) {
     to,
     subject: `${props.followerName} started following you`,
     react: <NewFollower {...props} />,
+  });
+}
+
+export async function sendBadgeUnlockedEmail(to, props) {
+  return send({
+    to,
+    subject: `🏆 You unlocked "${props.badgeName}"`,
+    react: <BadgeUnlocked {...props} />,
   });
 }

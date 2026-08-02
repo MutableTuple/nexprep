@@ -1,7 +1,7 @@
 import { supabase } from "./supabase";
 
 const SELECT_LIST =
-  "id, slug, subject, chapter, topic, difficulty, marks, negative_marks, estimated_time_seconds, question_text, question_type, hints, tags, exam, data, explanation";
+  "id, slug, subject, chapter, topic, difficulty, marks, negative_marks, estimated_time_seconds, question_text, question_type, hints, tags, exam, data, explanation, attempts, correct_attempts";
 
 const SELECT_FULL = "*";
 
@@ -49,6 +49,11 @@ function mapQuestion(q) {
     exam: q.exam,
     tags: q.tags ?? [],
     questionType: q.question_type,
+
+    // Real, DB-maintained counters (see the sync_question_attempt_counts
+    // trigger on solved_questions) — not derived client-side.
+    totalAttempts: q.attempts ?? 0,
+    correctAttempts: q.correct_attempts ?? 0,
 
     solved: false,
     bookmarked: false,
@@ -671,13 +676,43 @@ export async function deleteUserBadge(id) {
    ============================================================ */
 
 export async function getUserGoals(userId) {
-  return handle(
-    await supabase
-      .from("user_goals")
-      .select("*")
-      .eq("user_id", userId)
-      .single(),
-  );
+  if (!userId) return null;
+  const { data, error } = await supabase
+    .from("user_goals")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data; // null if the user has no row yet — callers fall back to the
+  // columns' own defaults (daily_questions: 20, weekly_questions: 150, ...)
+}
+
+// Count of questions solved today / this calendar week, for the daily and
+// weekly goal progress bars. Boundaries are the browser's local time, not
+// UTC — the JEE audience is overwhelmingly IST, so "local" already means
+// IST for almost every real user without needing an explicit conversion.
+export async function getStudyProgress(userId) {
+  if (!userId) return { today: 0, week: 0 };
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfWeek = new Date(startOfToday);
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Sunday start
+
+  const { data, error } = await supabase
+    .from("solved_questions")
+    .select("solved_at")
+    .eq("user_id", userId)
+    .gte("solved_at", startOfWeek.toISOString());
+  if (error) throw error;
+
+  let today = 0;
+  let week = 0;
+  for (const row of data ?? []) {
+    week += 1;
+    if (row.solved_at >= startOfToday.toISOString()) today += 1;
+  }
+  return { today, week };
 }
 
 export async function upsertUserGoals(userId, goals) {
@@ -701,13 +736,15 @@ export async function deleteUserGoals(userId) {
    ============================================================ */
 
 export async function getUserPreferences(userId) {
-  return handle(
-    await supabase
-      .from("user_preferences")
-      .select("*")
-      .eq("user_id", userId)
-      .single(),
-  );
+  if (!userId) return null;
+  const { data, error } = await supabase
+    .from("user_preferences")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data; // null if the user has no row yet (no signup trigger seeds
+  // one) — callers fall back to the columns' own defaults.
 }
 
 export async function upsertUserPreferences(userId, prefs) {
@@ -731,13 +768,15 @@ export async function deleteUserPreferences(userId) {
    ============================================================ */
 
 export async function getUserPrivacy(userId) {
-  return handle(
-    await supabase
-      .from("user_privacy")
-      .select("*")
-      .eq("user_id", userId)
-      .single(),
-  );
+  if (!userId) return null;
+  const { data, error } = await supabase
+    .from("user_privacy")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data; // null if the user has no row yet — callers fall back to the
+  // columns' own defaults (profile_public: true, show_badges: true, ...)
 }
 
 export async function upsertUserPrivacy(userId, settings) {
@@ -1045,6 +1084,52 @@ export async function getQuestionsByIds(ids) {
   if (error) throw error;
   const map = new Map((data ?? []).map((q) => [q.id, mapQuestion(q)]));
   return ids.map((id) => map.get(id)).filter(Boolean);
+}
+
+// The "error notebook" — questions whose most recent attempt was wrong.
+// solved_questions is upserted on (user_id, question_id), so is_correct is
+// always the *latest* attempt's result: once a user retries and gets one
+// right, it naturally falls out of this list on its own.
+export async function getIncorrectQuestions(
+  userId,
+  { subject, page = 1, limit = 25 } = {},
+) {
+  if (!userId) return { questions: [], count: 0 };
+
+  const { data: wrongRows, error } = await supabase
+    .from("solved_questions")
+    .select("question_id, xp_earned, attempts, solved_at")
+    .eq("user_id", userId)
+    .eq("is_correct", false)
+    .order("solved_at", { ascending: false });
+  if (error) throw error;
+  if (!wrongRows?.length) return { questions: [], count: 0 };
+
+  const statusByQuestionId = new Map(wrongRows.map((r) => [r.question_id, r]));
+  const orderedIds = wrongRows.map((r) => r.question_id);
+  const questions = await getQuestionsByIds(orderedIds); // preserves order, drops any unpublished/deleted
+
+  const filtered =
+    subject && subject !== "All"
+      ? questions.filter((q) => q.subject === subject)
+      : questions;
+
+  const withStatus = filtered.map((q) => {
+    const status = statusByQuestionId.get(q.id);
+    return {
+      ...q,
+      solved: true,
+      solvedCorrect: false,
+      xpEarned: status?.xp_earned ?? 0,
+      attemptsCount: status?.attempts ?? 0,
+    };
+  });
+
+  const start = (page - 1) * limit;
+  return {
+    questions: withStatus.slice(start, start + limit),
+    count: withStatus.length,
+  };
 }
 
 export async function createDuelInvite(player1Id, player2Id, subject) {
