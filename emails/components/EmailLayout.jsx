@@ -36,7 +36,7 @@ export default function EmailLayout({ previewText, children }) {
           <Hr style={styles.hr} />
           <Section>
             <Text style={styles.footerText}>
-              You're receiving this because you have an account on{" "}
+              You&apos;re receiving this because you have an account on{" "}
               <Link href="https://rankgrind.com" style={styles.footerLink}>
                 rankgrind.com
               </Link>

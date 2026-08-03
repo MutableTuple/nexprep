@@ -20,7 +20,7 @@ export default function BadgeUnlocked({
       previewText={`You unlocked the "${badgeName}" badge on rankgrind.com`}
     >
       <Section>
-        <Text style={emailStyles.badge}>🏆 Badge Unlocked</Text>
+        <Text style={emailStyles.badge}>Badge Unlocked</Text>
         <Heading style={emailStyles.heading}>
           Nice work, {userName}!
         </Heading>

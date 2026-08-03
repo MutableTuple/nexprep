@@ -37,7 +37,7 @@ async function send({ to, subject, react }) {
 export async function sendDailyQuestionEmail(to, props) {
   return send({
     to,
-    subject: `🔥 Today's ${props.subject} question is up`,
+    subject: `Today's ${props.subject} question is up`,
     react: <DailyQuestion {...props} />,
   });
 }
@@ -45,7 +45,7 @@ export async function sendDailyQuestionEmail(to, props) {
 export async function sendDailyDigestEmail(to, props) {
   return send({
     to,
-    subject: "📬 Your daily rankgrind update",
+    subject: `Today's challenge: ${props.topic ?? props.subject}`,
     react: <DailyDigest {...props} />,
   });
 }
@@ -77,7 +77,7 @@ export async function sendNewFollowerEmail(to, props) {
 export async function sendBadgeUnlockedEmail(to, props) {
   return send({
     to,
-    subject: `🏆 You unlocked "${props.badgeName}"`,
+    subject: `You unlocked "${props.badgeName}"`,
     react: <BadgeUnlocked {...props} />,
   });
 }

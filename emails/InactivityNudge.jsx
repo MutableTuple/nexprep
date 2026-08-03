@@ -17,9 +17,9 @@ export default function InactivityNudge({
       previewText={`It's been ${daysInactive} days — come solve a question`}
     >
       <Section>
-        <Text style={emailStyles.badge}>👋 We miss you</Text>
+        <Text style={emailStyles.badge}>We miss you</Text>
         <Heading style={emailStyles.heading}>
-          It's been {daysInactive} days, {userName}
+          It&apos;s been {daysInactive} days, {userName}
         </Heading>
         <Text style={emailStyles.text}>
           {streakMessage} A few minutes of practice is all it takes to stay

@@ -14,9 +14,9 @@ export default function DailyQuestion({
       previewText={`Today's ${subject} question is ready — ${topic}`}
     >
       <Section>
-        <Text style={emailStyles.badge}>🔥 Question of the Day</Text>
+        <Text style={emailStyles.badge}>Question of the Day</Text>
         <Heading style={emailStyles.heading}>
-          Hey {userName}, today's question is up
+          Hey {userName}, today&apos;s question is up
         </Heading>
         <Text style={emailStyles.text}>
           A new {subject} question on <strong>{topic}</strong> is waiting for
@@ -28,7 +28,7 @@ export default function DailyQuestion({
         </Text>
 
         <Button href={questionUrl} style={emailStyles.button}>
-          Solve Today's Question →
+          Solve Today&apos;s Question →
         </Button>
       </Section>
     </EmailLayout>
