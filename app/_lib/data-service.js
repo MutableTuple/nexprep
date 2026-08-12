@@ -911,7 +911,7 @@ export async function getMyRank(userId) {
 export async function getLeaderboard(limit = 100) {
   const { data, error } = await supabase
     .from("user_stats")
-    .select("*, profiles(username, display_name, avatar_url)")
+    .select("*, profiles(username, display_name, avatar_url, college)")
     .order("xp", { ascending: false })
     .limit(limit);
   if (error) throw error;

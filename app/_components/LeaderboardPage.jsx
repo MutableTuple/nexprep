@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Flame, Zap } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Flame, Zap, BookOpen } from "lucide-react";
 import { useUserId } from "@/app/_lib/AuthProvider";
 import {
   getLeaderboard,
@@ -49,16 +51,22 @@ function normalizeRow(row, isPeriod) {
       userId: row.user_id,
       name: row.display_name || row.username || "Anonymous",
       username: row.username,
+      avatarUrl: row.avatar_url || null,
+      college: row.college || "",
       xp: Number(row.period_xp) || 0,
       streak: row.streak ?? 0,
+      solved: Number(row.period_solved) || 0,
     };
   }
   return {
     userId: row.user_id,
     name: row.profiles?.display_name || row.profiles?.username || "Anonymous",
     username: row.profiles?.username,
+    avatarUrl: row.profiles?.avatar_url || null,
+    college: row.profiles?.college || "",
     xp: row.xp ?? 0,
     streak: row.streak ?? 0,
+    solved: row.solved_questions ?? 0,
   };
 }
 
@@ -103,7 +111,6 @@ export default function LeaderboardPage() {
             rank: i + 1,
             ...base,
             init: getInitials(base.name),
-            college: base.username ? `@${base.username}` : "",
             me: !!userId && base.userId === userId,
           };
         });
@@ -192,15 +199,20 @@ export default function LeaderboardPage() {
                       className="flex flex-col items-center gap-2"
                     >
                       {isFirst && <span className="text-2xl">👑</span>}
-                      <div
-                        className={`rounded-full flex items-center justify-center font-semibold border-2 ${AVATAR_COLORS[idx]} ${
+                      <Avatar
+                        className={`border-2 ${
                           isFirst
-                            ? "w-16 h-16 text-lg border-amber-300"
-                            : "w-12 h-12 text-sm border-border"
+                            ? "w-16 h-16 border-amber-300"
+                            : "w-12 h-12 border-border"
                         }`}
                       >
-                        {u.init}
-                      </div>
+                        <AvatarImage src={u.avatarUrl || undefined} alt={u.name} />
+                        <AvatarFallback
+                          className={`font-semibold ${AVATAR_COLORS[idx]} ${isFirst ? "text-lg" : "text-sm"}`}
+                        >
+                          {u.init}
+                        </AvatarFallback>
+                      </Avatar>
                       <div className="text-center">
                         <p className="text-xs font-semibold truncate max-w-[76px]">
                           {u.name.split(" ")[0]}
@@ -230,65 +242,89 @@ export default function LeaderboardPage() {
                 Rankings
               </p>
 
-              {rows.map((u, i) => (
-                <Card
-                  key={u.userId ?? i}
-                  className={`px-4 py-3.5 ${u.me ? "border-primary/30 bg-primary/[0.03]" : ""}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 shrink-0 flex items-center justify-center">
-                      {u.rank <= 3 ? (
-                        <span className="text-base leading-none">
-                          {RANK_MEDAL[u.rank]}
-                        </span>
-                      ) : (
-                        <span className="text-sm font-medium text-muted-foreground">
-                          {u.rank}
-                        </span>
-                      )}
-                    </div>
-
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}
-                    >
-                      {u.init}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold leading-tight">
-                          {u.name}
-                        </span>
-                        {u.me && (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] h-4 px-1.5 py-0 text-primary border-primary/30 leading-none"
-                          >
-                            you
-                          </Badge>
+              {rows.map((u, i) => {
+                const cardContent = (
+                  <Card
+                    className={`px-4 py-3.5 transition-colors ${u.me ? "border-primary/30 bg-primary/[0.03]" : ""} ${u.username ? "hover:border-foreground/20 hover:bg-muted/40" : ""}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 shrink-0 flex items-center justify-center">
+                        {u.rank <= 3 ? (
+                          <span className="text-base leading-none">
+                            {RANK_MEDAL[u.rank]}
+                          </span>
+                        ) : (
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {u.rank}
+                          </span>
                         )}
                       </div>
-                      {u.college && (
-                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                          {u.college}
-                        </p>
-                      )}
-                    </div>
 
-                    {u.streak >= 4 && (
-                      <div className="flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 rounded-lg px-2.5 py-1 shrink-0">
-                        <Flame size={12} />
-                        {u.streak}
+                      <Avatar className="w-10 h-10 shrink-0">
+                        <AvatarImage src={u.avatarUrl || undefined} alt={u.name} />
+                        <AvatarFallback
+                          className={`text-sm font-semibold ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}
+                        >
+                          {u.init}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold leading-tight">
+                            {u.name}
+                          </span>
+                          {u.me && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] h-4 px-1.5 py-0 text-primary border-primary/30 leading-none"
+                            >
+                              you
+                            </Badge>
+                          )}
+                        </div>
+                        {(u.username || u.college) && (
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                            {[u.username && `@${u.username}`, u.college]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        )}
                       </div>
-                    )}
 
-                    <div className="flex items-center gap-1 text-sm font-bold tabular-nums shrink-0">
-                      <Zap size={14} className="text-yellow-500 shrink-0" />
-                      {u.xp.toLocaleString()}
+                      {u.streak >= 4 && (
+                        <div className="flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 rounded-lg px-2.5 py-1 shrink-0">
+                          <Flame size={12} />
+                          {u.streak}
+                        </div>
+                      )}
+
+                      <div className="flex flex-col items-end gap-0.5 shrink-0">
+                        <div className="flex items-center gap-1 text-sm font-bold tabular-nums">
+                          <Zap size={14} className="text-yellow-500 shrink-0" />
+                          {u.xp.toLocaleString()}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
+                          <BookOpen size={11} />
+                          {u.solved.toLocaleString()} solved
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                );
+
+                return u.username ? (
+                  <Link
+                    key={u.userId ?? i}
+                    href={`/user/${u.username}/profile`}
+                    className="block"
+                  >
+                    {cardContent}
+                  </Link>
+                ) : (
+                  <div key={u.userId ?? i}>{cardContent}</div>
+                );
+              })}
 
               {period === 2 && userId && !amInTop100 && myRank && (
                 <p className="text-center text-xs text-muted-foreground pt-2">

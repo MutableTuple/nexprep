@@ -4,52 +4,15 @@
 // the combined daily-digest email to every registered user: today's
 // question, streak status, pending/recent duels, and friend activity.
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/app/_lib/supabase-admin";
 import { getQuestionOfTheDay } from "@/app/_lib/data-service";
 import { sendDailyDigestEmail } from "@/app/_lib/email";
+import { chunk, listAllUsers, fetchInChunks } from "@/app/_lib/cron-helpers";
 
 const SITE_URL = "https://rankgrind.com";
 const LOOKBACK_MS = 24 * 60 * 60 * 1000; // rolling 24h window, not calendar-day —
 // simpler than timezone-bucketing a once-a-day cron across an IST userbase.
 const SEND_CHUNK_SIZE = 10; // keep Resend request bursts small
 const SEND_CHUNK_DELAY_MS = 500;
-
-function chunk(arr, size) {
-  const out = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
-
-async function listAllUsers() {
-  const users = [];
-  let page = 1;
-  const perPage = 200;
-  for (;;) {
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers({
-      page,
-      perPage,
-    });
-    if (error) throw error;
-    users.push(...data.users);
-    if (data.users.length < perPage) break;
-    page += 1;
-  }
-  return users;
-}
-
-async function fetchInChunks(table, column, ids, select) {
-  const rows = [];
-  for (const idChunk of chunk(ids, 200)) {
-    if (idChunk.length === 0) continue;
-    const { data, error } = await supabaseAdmin
-      .from(table)
-      .select(select)
-      .in(column, idChunk);
-    if (error) throw error;
-    rows.push(...(data ?? []));
-  }
-  return rows;
-}
 
 export async function GET(request) {
   const authHeader = request.headers.get("authorization");

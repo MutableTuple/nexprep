@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, UserPlus, Check, X, UserMinus } from "lucide-react";
 import { showToast } from "@/app/_lib/toast";
@@ -24,6 +25,17 @@ function getInitials(name) {
     .slice(0, 2)
     .map((p) => p[0].toUpperCase())
     .join("");
+}
+
+function UserAvatar({ name, avatarUrl }) {
+  return (
+    <Avatar className="w-9 h-9 shrink-0">
+      <AvatarImage src={avatarUrl || undefined} alt={name} />
+      <AvatarFallback className="text-xs font-semibold">
+        {getInitials(name)}
+      </AvatarFallback>
+    </Avatar>
+  );
 }
 
 function FriendsList({ loading, friends, userId, onRemove, canRemove = false }) {
@@ -46,9 +58,10 @@ function FriendsList({ loading, friends, userId, onRemove, canRemove = false }) 
         return (
           <Card key={f.id} className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-semibold">
-                {getInitials(other?.display_name || other?.username)}
-              </div>
+              <UserAvatar
+                name={other?.display_name || other?.username}
+                avatarUrl={other?.avatar_url}
+              />
               <div>
                 <p className="text-sm font-medium">
                   {other?.display_name || other?.username}
@@ -180,9 +193,10 @@ export default function FriendsTab({ userId, viewerId, isOwn }) {
           {results.map((p) => (
             <Card key={p.id} className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-semibold">
-                  {getInitials(p.display_name || p.username)}
-                </div>
+                <UserAvatar
+                  name={p.display_name || p.username}
+                  avatarUrl={p.avatar_url}
+                />
                 <div>
                   <p className="text-sm font-medium">
                     {p.display_name || p.username}
@@ -242,9 +256,10 @@ export default function FriendsTab({ userId, viewerId, isOwn }) {
               pending.map((r) => (
                 <Card key={r.id} className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-semibold">
-                      {getInitials(r.profiles?.display_name || r.profiles?.username)}
-                    </div>
+                    <UserAvatar
+                      name={r.profiles?.display_name || r.profiles?.username}
+                      avatarUrl={r.profiles?.avatar_url}
+                    />
                     <div>
                       <p className="text-sm font-medium">
                         {r.profiles?.display_name || r.profiles?.username}

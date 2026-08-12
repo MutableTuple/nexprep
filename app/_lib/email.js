@@ -12,6 +12,7 @@ import FriendRequest from "@/emails/FriendRequest";
 import InactivityNudge from "@/emails/InactivityNudge";
 import NewFollower from "@/emails/NewFollower";
 import BadgeUnlocked from "@/emails/BadgeUnlocked";
+import WeeklyStats from "@/emails/WeeklyStats";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -79,5 +80,13 @@ export async function sendBadgeUnlockedEmail(to, props) {
     to,
     subject: `You unlocked "${props.badgeName}"`,
     react: <BadgeUnlocked {...props} />,
+  });
+}
+
+export async function sendWeeklyStatsEmail(to, props) {
+  return send({
+    to,
+    subject: `Your week on rankgrind.com: ${props.questionsSolved} solved`,
+    react: <WeeklyStats {...props} />,
   });
 }
