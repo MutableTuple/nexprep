@@ -17,7 +17,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import Link from "next/link";
 
 const DIFFICULTY_STARS = { Easy: 2, Medium: 3, Hard: 5 };
@@ -54,6 +60,62 @@ function getInitials(name) {
     .join("");
 }
 
+// The classic "who's here" overlapping avatar stack (Linear, Notion, Figma,
+// ...) — each avatar overlaps the previous one, links to that person's
+// profile, and shows their name on hover.
+function SolversStack({ solvers, totalCount }) {
+  if (!solvers?.length) return null;
+  const extra = totalCount - solvers.length;
+
+  return (
+    <TooltipProvider delayDuration={150}>
+      <div className="flex items-center gap-2">
+        <div className="flex -space-x-2">
+          {solvers.map((s) =>
+            s.username ? (
+              <Tooltip key={s.userId}>
+                <TooltipTrigger asChild>
+                  <Link
+                    href={`/user/${s.username}/profile`}
+                    className="transition-transform hover:z-10 hover:-translate-y-0.5"
+                  >
+                    <Avatar className="h-7 w-7 border-2 border-background">
+                      <AvatarImage src={s.avatarUrl || undefined} alt={s.name} />
+                      <AvatarFallback className="text-[10px] bg-muted">
+                        {getInitials(s.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent>{s.name}</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Avatar
+                key={s.userId}
+                className="h-7 w-7 border-2 border-background"
+              >
+                <AvatarImage src={s.avatarUrl || undefined} alt={s.name} />
+                <AvatarFallback className="text-[10px] bg-muted">
+                  {getInitials(s.name)}
+                </AvatarFallback>
+              </Avatar>
+            ),
+          )}
+          {extra > 0 && (
+            <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-background bg-muted text-[10px] font-semibold text-muted-foreground">
+              +{extra}
+            </div>
+          )}
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {totalCount === 1 ? "1 person has" : `${totalCount} people have`}{" "}
+          solved this
+        </span>
+      </div>
+    </TooltipProvider>
+  );
+}
+
 function useCountdown(resetAt) {
   const [label, setLabel] = useState("");
 
@@ -81,6 +143,8 @@ export default function HeroContent({
   leaderboard,
   resetAt,
   questionCount,
+  solvers,
+  solversCount,
 }) {
   const timeLeft = useCountdown(resetAt);
 
@@ -229,6 +293,10 @@ export default function HeroContent({
                     </span>
                   </div>
                 </div>
+
+                {solvers?.length > 0 && (
+                  <SolversStack solvers={solvers} totalCount={solversCount} />
+                )}
 
                 <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-3 border-t border-border">
                   <span className="flex items-center gap-1.5">

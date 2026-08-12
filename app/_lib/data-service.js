@@ -989,6 +989,40 @@ export async function getQuestionOfTheDay() {
   return getQuestionById(ids[index].id);
 }
 
+// Social proof for the homepage "Today's Challenge" card — who has solved
+// this question, most recent first, plus how many total (so the UI can
+// show a handful of avatars + "N others").
+export async function getQuestionSolvers(questionId, limit = 3) {
+  if (!questionId) return { solvers: [], totalCount: 0 };
+
+  const [{ count, error: countError }, { data, error }] = await Promise.all([
+    supabase
+      .from("solved_questions")
+      .select("*", { count: "exact", head: true })
+      .eq("question_id", questionId)
+      .not("user_id", "is", null),
+    supabase
+      .from("solved_questions")
+      .select("user_id, solved_at, profiles(username, display_name, avatar_url)")
+      .eq("question_id", questionId)
+      .not("user_id", "is", null)
+      .order("solved_at", { ascending: false })
+      .limit(limit),
+  ]);
+  if (countError) throw countError;
+  if (error) throw error;
+
+  return {
+    solvers: (data ?? []).map((row) => ({
+      userId: row.user_id,
+      name: row.profiles?.display_name || row.profiles?.username || "Anonymous",
+      username: row.profiles?.username,
+      avatarUrl: row.profiles?.avatar_url || null,
+    })),
+    totalCount: count ?? 0,
+  };
+}
+
 export async function listNotifications(userId, limit = 20) {
   const { data, error } = await supabase
     .from("notifications")

@@ -2,6 +2,7 @@ import {
   getQuestionOfTheDay,
   getLeaderboard,
   getPublishedQuestionCount,
+  getQuestionSolvers,
 } from "@/app/_lib/data-service";
 import HeroContent from "./HeroContent";
 
@@ -18,10 +19,19 @@ function getNextMidnightIST() {
 }
 
 export default async function Hero() {
-  const [question, leaderboard, questionCount] = await Promise.all([
-    getQuestionOfTheDay().catch(() => null),
+  // Solvers depend on knowing the question's id first, so it can't join
+  // the initial Promise.all — everything else still fetches in parallel.
+  const question = await getQuestionOfTheDay().catch(() => null);
+
+  const [leaderboard, questionCount, solverData] = await Promise.all([
     getLeaderboard(5).catch(() => []),
     getPublishedQuestionCount().catch(() => 0),
+    question
+      ? getQuestionSolvers(question.id, 3).catch(() => ({
+          solvers: [],
+          totalCount: 0,
+        }))
+      : Promise.resolve({ solvers: [], totalCount: 0 }),
   ]);
 
   return (
@@ -30,6 +40,8 @@ export default async function Hero() {
       leaderboard={leaderboard}
       resetAt={getNextMidnightIST()}
       questionCount={questionCount}
+      solvers={solverData.solvers}
+      solversCount={solverData.totalCount}
     />
   );
 }
