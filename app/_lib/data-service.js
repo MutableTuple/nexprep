@@ -68,11 +68,17 @@ export async function getQuestions({
   limit = 25,
   userId = null,
 } = {}) {
+  // Ordered by id, not created_at — questions get imported in topic-sized
+  // batches, so "newest first" clustered dozens of same-topic questions
+  // together on page 1, making the catalog feel repetitive. `id` is a
+  // random uuid, so sorting by it gives a stable shuffle: mixed subject
+  // matter, but still deterministic across page requests (no duplicate or
+  // skipped rows the way ORDER BY random() would cause with pagination).
   let query = supabase
     .from("questions")
     .select(SELECT_LIST)
     .eq("status", "published")
-    .order("created_at", { ascending: false })
+    .order("id", { ascending: true })
     .range((page - 1) * limit, page * limit - 1);
 
   if (subject && subject !== "All") {
