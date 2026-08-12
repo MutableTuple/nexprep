@@ -21,6 +21,7 @@ export default function InlineAnswerPanel({
   questionType,
   options: rawOptions,
   correctOption,
+  correctOptionIds,
   correctValue,
   tolerance,
   unit,
@@ -31,11 +32,15 @@ export default function InlineAnswerPanel({
   onSolved,
 }) {
   const isNumerical = NUMERICAL_TYPES.includes(questionType);
+  const isMultiple = questionType === "MCQ_MULTIPLE";
   const options = (rawOptions ?? []).map((o) => ({ label: o.id, text: o.text }));
-  const correctIndex = options.findIndex((o) => o.label === correctOption);
+  const correctLabels = correctOptionIds ?? (correctOption ? [correctOption] : []);
+  const correctIndices = options
+    .map((o, i) => (correctLabels.includes(o.label) ? i : -1))
+    .filter((i) => i !== -1);
   const checkForBadges = useBadgeUnlockCheck();
 
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState([]); // array of option indices
   const [numValue, setNumValue] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState(null); // { isCorrect, xpEarned } | null
@@ -45,22 +50,39 @@ export default function InlineAnswerPanel({
   // the full solve page, which already has the proper attempt-tracking UX.
   const readOnly = alreadySolved && alreadyCorrect;
 
+  function handleOptionSelect(index) {
+    if (isMultiple) {
+      setSelected((prev) =>
+        prev.includes(index)
+          ? prev.filter((i) => i !== index)
+          : [...prev, index],
+      );
+    } else {
+      setSelected([index]);
+    }
+  }
+
   async function handleSubmit() {
     if (!userId) {
       showToast.info("Sign in required", "Sign in to submit an answer.");
       return;
     }
-    if (isNumerical ? numValue === "" : selected === null) return;
+    if (isNumerical ? numValue === "" : selected.length === 0) return;
 
     const isCorrect = isNumerical
       ? Math.abs(parseFloat(numValue) - (correctValue ?? 0)) <= (tolerance ?? 0)
-      : selected === correctIndex;
+      : selected.length === correctIndices.length &&
+        selected.every((i) => correctIndices.includes(i));
 
     const firstTry = !alreadySolved;
     const xpEarned = isCorrect ? (firstTry ? xp : Math.round(xp / 2)) : 0;
     const selectedOption = isNumerical
       ? String(numValue)
-      : (options[selected]?.label ?? null);
+      : selected
+          .map((i) => options[i]?.label)
+          .filter(Boolean)
+          .sort()
+          .join(",");
 
     setSubmitting(true);
     try {
@@ -136,8 +158,8 @@ export default function InlineAnswerPanel({
                     index={i}
                     selected={selected}
                     submitted={submitted}
-                    correctIndex={correctIndex}
-                    onSelect={setSelected}
+                    correctIndices={correctIndices}
+                    onSelect={handleOptionSelect}
                   />
                 ))}
               </div>
@@ -148,7 +170,7 @@ export default function InlineAnswerPanel({
                 onClick={handleSubmit}
                 disabled={
                   submitting ||
-                  (isNumerical ? numValue === "" : selected === null)
+                  (isNumerical ? numValue === "" : selected.length === 0)
                 }
                 className="w-fit rounded-xl font-bold"
               >

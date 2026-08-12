@@ -3,9 +3,21 @@ import AnswerOption from "./AnswerOption";
 import { Button } from "@/components/ui/button";
 import ResultBox from "./ResultBox";
 import MarkdownRenderer from "../MarkdownRenderer";
+
+// Multi-answer questions are graded as an exact set match — every correct
+// option selected, nothing else. No partial credit (matches how
+// correctOptionIds is defined: a fixed set, not weighted per-option).
+function answerSetsMatch(selected, correct) {
+  return (
+    selected.length === correct.length &&
+    selected.every((i) => correct.includes(i))
+  );
+}
+
 export default function MCQPanel({
   options,
-  correctIndex,
+  correctIndices,
+  isMultiple,
   selected,
   submitted,
   attemptCount,
@@ -19,13 +31,15 @@ export default function MCQPanel({
   onRetry,
   onNext,
 }) {
-  const isCorrect = submitted && selected === correctIndex;
+  const isCorrect = submitted && answerSetsMatch(selected, correctIndices);
   return (
     <div className="flex flex-col">
       <div className="px-6 pt-6">
         <h3 className="text-[17px] font-bold">Choose your answer</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Select one option and submit
+          {isMultiple
+            ? "Select all that apply, then submit"
+            : "Select one option and submit"}
         </p>
       </div>
       <div className="px-6 py-5 flex flex-col gap-2.5">
@@ -36,7 +50,7 @@ export default function MCQPanel({
             index={i}
             selected={selected}
             submitted={submitted}
-            correctIndex={correctIndex}
+            correctIndices={correctIndices}
             onSelect={onSelect}
           />
         ))}
@@ -45,7 +59,7 @@ export default function MCQPanel({
         <div className="px-6 pb-6">
           <Button
             onClick={onSubmit}
-            disabled={selected === null}
+            disabled={selected.length === 0}
             className="w-full py-3.5 rounded-2xl font-bold text-[15px] h-auto"
           >
             {attemptCount > 1

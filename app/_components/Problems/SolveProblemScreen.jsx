@@ -52,7 +52,7 @@ export default function SolveProblemScreen({ questionId }) {
   const [navLoading, setNavLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState([]); // array of option indices — supports multi-answer questions
   const [previousValue, setPreviousValue] = useState(""); // restored typed value for numerical questions
   const [submitted, setSubmitted] = useState(false);
   const [checkingPrior, setCheckingPrior] = useState(true);
@@ -98,7 +98,7 @@ export default function SolveProblemScreen({ questionId }) {
       // still held the previous question's values (the "wrong answer" flash
       // on an unanswered question, or on Next/Previous click).
       setQuestion(q);
-      setSelected(null);
+      setSelected([]);
       setPreviousValue("");
       setSubmitted(false);
       setCheckingPrior(true);
@@ -149,14 +149,20 @@ export default function SolveProblemScreen({ questionId }) {
             if (isNumerical) {
               setPreviousValue(prior.selected_option);
             } else {
+              // Stored as comma-joined labels ("B" or "B,C") to support
+              // multi-answer questions — a lone label still splits fine.
+              const priorLabels = prior.selected_option
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
               const priorOptions = (question.options ?? []).map((o) => ({
                 label: o.id,
                 text: o.text,
               }));
-              const idx = priorOptions.findIndex(
-                (o) => o.label === prior.selected_option,
-              );
-              if (idx !== -1) setSelected(idx);
+              const indices = priorLabels
+                .map((label) => priorOptions.findIndex((o) => o.label === label))
+                .filter((i) => i !== -1);
+              if (indices.length > 0) setSelected(indices);
             }
           }
         }
@@ -207,10 +213,23 @@ export default function SolveProblemScreen({ questionId }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [currentIndex, allIds]);
 
+  function handleOptionSelect(index) {
+    const isMultiple = question?.questionType === "MCQ_MULTIPLE";
+    if (isMultiple) {
+      setSelected((prev) =>
+        prev.includes(index)
+          ? prev.filter((i) => i !== index)
+          : [...prev, index],
+      );
+    } else {
+      setSelected([index]);
+    }
+  }
+
   async function handleSubmit(value) {
     if (submitted) return; // already answered — block re-submission entirely
     if (checkingPrior) return; // still confirming whether this was answered before
-    if (selected === null && value === undefined) return;
+    if (selected.length === 0 && value === undefined) return;
 
     setSubmitted(true);
     setJustAnswered(true);
@@ -223,19 +242,25 @@ export default function SolveProblemScreen({ questionId }) {
       label: o.id,
       text: o.text,
     }));
-    const correctIndex = options.findIndex(
-      (o) => o.label === question?.correctOption,
-    );
+    const correctIds = question?.correctOptionIds ?? [];
+    const correctIndices = options
+      .map((o, i) => (correctIds.includes(o.label) ? i : -1))
+      .filter((i) => i !== -1);
     const isCorrect = isNumerical
       ? Math.abs(parseFloat(value) - (question?.correctValue ?? 0)) <=
         (question?.data?.tolerance ?? 0)
-      : selected === correctIndex;
+      : selected.length === correctIndices.length &&
+        selected.every((i) => correctIndices.includes(i));
 
     const selectedOption = isNumerical
       ? value != null
         ? String(value)
         : null
-      : (options[selected]?.label ?? null);
+      : selected
+          .map((i) => options[i]?.label)
+          .filter(Boolean)
+          .sort()
+          .join(",");
 
     if (isCorrect) {
       setXpAnimating(true);
@@ -318,7 +343,7 @@ export default function SolveProblemScreen({ questionId }) {
 
   function handleRetry() {
     setSubmitted(false);
-    setSelected(null);
+    setSelected([]);
     setPreviousValue("");
     setJustAnswered(false);
     setEarnedXP(null);
@@ -343,9 +368,9 @@ export default function SolveProblemScreen({ questionId }) {
   }));
   const mobileLabel = isNumerical
     ? "Enter answer"
-    : selected === null
+    : selected.length === 0
       ? "Choose answer"
-      : `Selected ${options[selected]?.label} — Submit`;
+      : `Selected ${selected.map((i) => options[i]?.label).join(", ")} — Submit`;
 
   const answerPanel = (
     <AnswerPanel
@@ -356,7 +381,7 @@ export default function SolveProblemScreen({ questionId }) {
       previousValue={previousValue}
       attemptCount={attemptCount}
       justAnswered={justAnswered}
-      onSelect={setSelected}
+      onSelect={handleOptionSelect}
       onSubmit={handleSubmit}
       onRetry={handleRetry}
       onNext={goNext}

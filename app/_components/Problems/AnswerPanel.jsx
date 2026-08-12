@@ -42,14 +42,17 @@ export default function AnswerPanel({
     label: o.id,
     text: o.text,
   }));
-  const correctIndex = options.findIndex(
-    (o) => o.label === question.correctOption,
-  );
+  const correctLabels = question.correctOptionIds ?? [];
+  const correctIndices = options
+    .map((o, i) => (correctLabels.includes(o.label) ? i : -1))
+    .filter((i) => i !== -1);
+  const isMultiple = question.questionType === "MCQ_MULTIPLE";
 
   return (
     <MCQPanel
       options={options}
-      correctIndex={correctIndex}
+      correctIndices={correctIndices}
+      isMultiple={isMultiple}
       selected={selected}
       submitted={submitted}
       attemptCount={attemptCount}

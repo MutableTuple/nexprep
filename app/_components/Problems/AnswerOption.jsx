@@ -5,14 +5,15 @@ import MarkdownRenderer from "../MarkdownRenderer";
 export default function AnswerOption({
   opt,
   index,
-  selected,
+  selected, // array of selected indices — one or many
   submitted,
-  correctIndex,
+  correctIndices, // array of correct indices — one for single-answer, several for multi
   onSelect,
 }) {
-  const isSelected = selected === index;
-  const isRight = submitted && index === correctIndex;
-  const isWrong = submitted && isSelected && index !== correctIndex;
+  const isSelected = selected.includes(index);
+  const isActuallyCorrect = correctIndices.includes(index);
+  const isRight = submitted && isActuallyCorrect;
+  const isWrong = submitted && isSelected && !isActuallyCorrect;
 
   let containerClass = "border bg-card text-card-foreground";
   let labelClass = "bg-muted text-muted-foreground";

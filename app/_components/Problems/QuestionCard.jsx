@@ -42,6 +42,7 @@ export default function QuestionCard({
   question,
   options,
   correctOption,
+  correctOptionIds,
   correctValue,
   tolerance,
   unit,
@@ -192,6 +193,7 @@ export default function QuestionCard({
             questionType={questionType}
             options={options}
             correctOption={correctOption}
+            correctOptionIds={correctOptionIds}
             correctValue={correctValue}
             tolerance={tolerance}
             unit={unit}
