@@ -221,6 +221,12 @@ export default function SolveProblemScreen({ questionId }) {
       if (!id) return;
       setNavLoading(true);
       setCurrentIndex(newIndex);
+      // Snap the page to the top so the new question starts where the
+      // eye already is — otherwise long scrolled explanations leave
+      // the reader hunting for the top of the next question.
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
       await loadQuestion(id);
       setNavLoading(false);
     },
