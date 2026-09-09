@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,8 +15,10 @@ import {
   SkipForward,
   XCircle,
   BookOpen,
+  Lightbulb,
 } from "lucide-react";
 import MarkdownRenderer from "../../_components/MarkdownRenderer";
+import ApproachSection from "./ApproachSection";
 
 // ─── Inline strip ─────────────────────────────────────────────────────────────
 
@@ -86,6 +88,8 @@ function ExplanationModal({
   onClose,
   isCorrect,
   xp,
+  questionId,
+  approach,
   explanation,
   formula,
   solutionSteps,
@@ -104,7 +108,7 @@ function ExplanationModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-[96vw] max-w-5xl max-h-[90vh] flex flex-col rounded-2xl p-0 gap-0 overflow-hidden [&>button]:hidden">
+      <DialogContent className="w-[96vw] !max-w-3xl sm:!max-w-3xl md:!max-w-4xl max-h-[90vh] flex flex-col rounded-2xl p-0 gap-0 overflow-hidden [&>button]:hidden">
         {/* Header */}
         <DialogHeader className="px-6 sm:px-8 pt-6 pb-4 border-b flex-row items-center justify-between space-y-0 shrink-0">
           <DialogTitle className="flex items-center gap-3 text-base sm:text-lg">
@@ -134,10 +138,20 @@ function ExplanationModal({
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 flex flex-col gap-7">
+          {/* Reasoning framework — official approach + community
+              submissions in a swipeable panel with an add-your-own
+              form. Handles its own loading, empty state, and auth. */}
+          {questionId && (
+            <ApproachSection
+              questionId={questionId}
+              officialApproach={approach}
+            />
+          )}
+
           {!!explanation && (
             <div>
               <p className="text-[11px] uppercase tracking-widest font-semibold text-muted-foreground mb-3">
-                Explanation
+                Worked solution
               </p>
               <div className="text-sm sm:text-[15px] leading-relaxed text-foreground">
                 <MarkdownRenderer>{explanation}</MarkdownRenderer>
@@ -231,22 +245,30 @@ export default function ResultBox({
   isCorrect,
   xp,
   justAnswered,
+  questionId,
+  approach,
   explanation,
   formula,
   solutionSteps,
   onRetry,
   onNext,
 }) {
+  // Explanation is hidden by default — user opens it via the "View
+  // Solution" button in the strip. Was auto-opening on wrong answers
+  // before, but that competed with the upsell modal and made it hard
+  // to focus on either. Keeping it opt-in.
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Only auto-open on a FRESH wrong submit — justAnswered is false when this
-  // state came from loading an already-solved question (revisiting via
-  // Prev/Next, or a page reload). Without that guard, this effect fires any
-  // time isCorrect becomes false for any reason, including just navigating
-  // to a question you already got wrong.
+  // The upsell modal (rendered way up in SolveProblemScreen) offers a
+  // "See explanation" button. Rather than drill state through 4
+  // components, we listen for a window event it fires. Namespaced so
+  // it won't clash with anything else.
   useEffect(() => {
-    if (!isCorrect && justAnswered) setModalOpen(true);
-  }, [isCorrect, justAnswered]);
+    const handler = () => setModalOpen(true);
+    window.addEventListener("rankgrind:show-explanation", handler);
+    return () =>
+      window.removeEventListener("rankgrind:show-explanation", handler);
+  }, []);
 
   return (
     <>
@@ -263,6 +285,8 @@ export default function ResultBox({
         onClose={() => setModalOpen(false)}
         isCorrect={isCorrect}
         xp={xp}
+        questionId={questionId}
+        approach={approach}
         explanation={explanation}
         formula={formula}
         solutionSteps={solutionSteps}

@@ -41,6 +41,11 @@ function mapQuestion(q) {
     unit: q.data?.unit ?? "",
 
     explanation: q.explanation ?? "",
+    // "How to think about it" — the reasoning framework, shown as
+    // the first section of the explanation modal so students engage
+    // with strategy before mechanics. Nullable in the DB, so empty
+    // string when missing — UI hides the section entirely then.
+    approach: q.approach ?? "",
     solutionSteps: q.data?.solutionSteps ?? [],
     formula: q.data?.formula ?? "",
     hint: q.hints?.[0]?.text ?? "",
@@ -115,6 +120,67 @@ export async function getQuestions({
     };
   });
 }
+// -------------------- Question approaches (community-authored) --------------------
+// Every user can submit their own "how to think about this" for any
+// question. The DB-authored `questions.approach` is treated as slot 0
+// ("official") and community approaches follow behind it, newest first.
+
+export async function getApproachesForQuestion(questionId) {
+  if (!questionId) return [];
+  const { data, error } = await supabase
+    .from("question_approaches")
+    .select(
+      "id, approach_text, upvotes, created_at, user_id, profiles(id, username, display_name, avatar_url)",
+    )
+    .eq("question_id", questionId)
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("getApproachesForQuestion:", error);
+    return [];
+  }
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    text: row.approach_text,
+    upvotes: row.upvotes,
+    createdAt: row.created_at,
+    author: {
+      id: row.user_id,
+      username: row.profiles?.username,
+      displayName: row.profiles?.display_name,
+      avatarUrl: row.profiles?.avatar_url,
+    },
+  }));
+}
+
+export async function submitApproach({ userId, questionId, text }) {
+  if (!userId || !questionId) throw new Error("Login required.");
+  const clean = String(text ?? "").trim();
+  if (clean.length < 20)
+    throw new Error("Approach is too short — aim for 20+ characters.");
+  if (clean.length > 2000)
+    throw new Error("Approach is too long — keep it under 2000 characters.");
+  const { data, error } = await supabase
+    .from("question_approaches")
+    .upsert(
+      { user_id: userId, question_id: questionId, approach_text: clean },
+      { onConflict: "user_id,question_id" },
+    )
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteMyApproach(userId, questionId) {
+  if (!userId || !questionId) return;
+  const { error } = await supabase
+    .from("question_approaches")
+    .delete()
+    .eq("user_id", userId)
+    .eq("question_id", questionId);
+  if (error) throw error;
+}
+
 export async function getQuestionById(id) {
   const { data, error } = await supabase
     .from("questions")

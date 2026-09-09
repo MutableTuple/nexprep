@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import React from "react";
 import ResultBox from "./ResultBox";
 import { useState, useEffect } from "react";
+import { Lightbulb } from "lucide-react";
 
 export default function NumericalPanel({
   correctValue,
@@ -12,6 +13,8 @@ export default function NumericalPanel({
   previousValue,
   attemptCount,
   justAnswered,
+  questionId,
+  approach,
   explanation,
   formula,
   solutionSteps,
@@ -19,6 +22,7 @@ export default function NumericalPanel({
   onSubmit,
   onRetry,
   onNext,
+  onOpenApproach,
 }) {
   const [inputValue, setInputValue] = useState("");
 
@@ -62,7 +66,7 @@ export default function NumericalPanel({
       </div>
 
       {!submitted ? (
-        <div className="px-6 pb-6">
+        <div className="px-6 pb-6 space-y-2">
           <Button
             onClick={() => onSubmit(inputValue)}
             disabled={!inputValue}
@@ -72,12 +76,23 @@ export default function NumericalPanel({
               ? `Submit (attempt ${attemptCount})`
               : "Submit answer"}
           </Button>
+          {onOpenApproach && (
+            <Button
+              onClick={onOpenApproach}
+              className="hidden lg:flex w-full py-3 rounded-2xl font-semibold text-[13px] h-auto gap-2 bg-orange-500 hover:bg-orange-600 text-white border-transparent"
+            >
+              <Lightbulb size={14} />
+              How to think about it
+            </Button>
+          )}
         </div>
       ) : (
         <ResultBox
           isCorrect={isCorrect}
           xp={xp}
           justAnswered={justAnswered}
+          questionId={questionId}
+          approach={approach}
           explanation={explanation}
           formula={formula}
           solutionSteps={solutionSteps}

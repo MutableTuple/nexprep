@@ -23,7 +23,10 @@ import MobileAnswerSheet from "./MobileAnswerSheet";
 import LoadingScreen from "./LoadingScreen";
 import ErrorScreen from "./ErrorScreen";
 import SimilarQuestions from "../SimilarQuestions";
+import NextQuestionUpsellModal from "./NextQuestionUpsellModal";
+import ApproachModal from "./ApproachModal";
 import YouTubeEmbed from "./YouTubeEmbed";
+import { Lightbulb } from "lucide-react";
 import { useUser } from "@/app/_lib/AuthProvider";
 import { showToast } from "@/app/_lib/toast";
 import { useBadgeUnlockCheck } from "../BadgeUnlockProvider";
@@ -63,6 +66,31 @@ export default function SolveProblemScreen({ questionId }) {
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [xpAnimating, setXpAnimating] = useState(false);
   const [earnedXP, setEarnedXP] = useState(null); // actual XP awarded once answered — null beforehand
+
+  // Post-solve upsell: modal shows a matching next question so users
+  // never hit a dead end. Opens only after (a) a fresh submit happened
+  // and (b) the mobile answer sheet is closed — so the explanation
+  // gets read first and we never stack modals on top of the sheet.
+  // `lastCorrect` mirrors the submit's result so copy can adapt.
+  const [upsellOpen, setUpsellOpen] = useState(false);
+  const [lastCorrect, setLastCorrect] = useState(false);
+  const [upsellPending, setUpsellPending] = useState(false);
+  // Approach modal — separately controllable from ExplanationModal so
+  // students can consult the reasoning framework BEFORE submitting.
+  const [approachOpen, setApproachOpen] = useState(false);
+
+  useEffect(() => {
+    if (!upsellPending) return;
+    if (mobileSheetOpen) return; // wait for the sheet to close
+    // Small breather so it doesn't feel like the sheet's dismiss
+    // triggered a whole new modal — this reads as a "beat then queue
+    // the next one" moment.
+    const t = setTimeout(() => {
+      setUpsellOpen(true);
+      setUpsellPending(false);
+    }, 600);
+    return () => clearTimeout(t);
+  }, [upsellPending, mobileSheetOpen]);
 
   const { timerStr, seconds: elapsedSeconds } = useTimer(!submitted);
   const { user, loading: authLoading } = useUser();
@@ -109,6 +137,14 @@ export default function SolveProblemScreen({ questionId }) {
       setXpAnimating(false);
       setEarnedXP(null);
       setError(null);
+      // Reset upsell state too — otherwise the "next question" card
+      // from the previous question lingers on the new page (and its
+      // "That's a lock" copy makes it look like the new question was
+      // auto-solved correctly).
+      setUpsellOpen(false);
+      setUpsellPending(false);
+      setLastCorrect(false);
+      setApproachOpen(false);
     } catch (e) {
       setError(e);
     }
@@ -267,6 +303,13 @@ export default function SolveProblemScreen({ questionId }) {
       setTimeout(() => setXpAnimating(false), 1200);
     }
 
+    // Remember the outcome so the upsell modal can adapt its copy,
+    // and queue it. The actual open is gated by the effect above —
+    // it waits until the mobile answer sheet is closed so we don't
+    // stack modals or bury the explanation.
+    setLastCorrect(isCorrect);
+    setUpsellPending(true);
+
     // XP tapers on two axes: attempt count (first try vs retry) and speed
     // (within the question's estimated time vs over it) — a slow first-try
     // solve or a fast retry both land in the middle, a slow retry earns least.
@@ -385,6 +428,7 @@ export default function SolveProblemScreen({ questionId }) {
       onSubmit={handleSubmit}
       onRetry={handleRetry}
       onNext={goNext}
+      onOpenApproach={() => setApproachOpen(true)}
     />
   );
 
@@ -508,6 +552,46 @@ export default function SolveProblemScreen({ questionId }) {
       >
         {answerPanel}
       </MobileAnswerSheet>
+
+      {/* Post-solve upsell — appears ~1.5s after submitting so users
+          always have "one more" queued up. Same chapter as the one
+          just solved, headline adapts to right/wrong. */}
+      <NextQuestionUpsellModal
+        open={upsellOpen}
+        onOpenChange={setUpsellOpen}
+        isCorrect={lastCorrect}
+        subject={question.subject}
+        chapter={question.chapter}
+        topic={question.topic}
+        currentQuestionId={question.id}
+        // Fires a window event that ResultBox listens for — avoids
+        // drilling explanation state through AnswerPanel → MCQPanel →
+        // ResultBox.
+        onShowExplanation={() =>
+          window.dispatchEvent(new CustomEvent("rankgrind:show-explanation"))
+        }
+      />
+
+      {/* Standalone approach modal — available BEFORE submitting too,
+          so students can consult the reasoning framework as a hint. */}
+      <ApproachModal
+        open={approachOpen}
+        onOpenChange={setApproachOpen}
+        questionId={question.id}
+        officialApproach={question.approach}
+      />
+
+      {/* Mobile-only floating orange FAB — sits above the mobile
+          answer button in the sticky footer. Desktop gets the inline
+          button below Submit inside the answer panel. */}
+      <button
+        type="button"
+        onClick={() => setApproachOpen(true)}
+        aria-label="How to think about this problem"
+        className="lg:hidden fixed bottom-24 right-5 z-40 h-14 w-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-[0_8px_24px_rgba(234,88,12,0.45)] flex items-center justify-center active:scale-95 transition-transform"
+      >
+        <Lightbulb size={22} />
+      </button>
     </div>
   );
 }

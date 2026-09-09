@@ -14,6 +14,7 @@ export default function AnswerPanel({
   onSubmit,
   onRetry,
   onNext,
+  onOpenApproach,
 }) {
   const isNumerical = ["NUMERICAL", "INTEGER"].includes(question.questionType);
 
@@ -27,6 +28,8 @@ export default function AnswerPanel({
         previousValue={previousValue}
         attemptCount={attemptCount}
         justAnswered={justAnswered}
+        questionId={question.id}
+        approach={question.approach}
         explanation={question.explanation}
         formula={question.formula}
         solutionSteps={question.solutionSteps}
@@ -34,6 +37,7 @@ export default function AnswerPanel({
         onSubmit={onSubmit}
         onRetry={onRetry}
         onNext={onNext}
+        onOpenApproach={onOpenApproach}
       />
     );
   }
@@ -57,6 +61,8 @@ export default function AnswerPanel({
       submitted={submitted}
       attemptCount={attemptCount}
       justAnswered={justAnswered}
+      questionId={question.id}
+      approach={question.approach}
       explanation={question.explanation}
       formula={question.formula}
       solutionSteps={question.solutionSteps}
@@ -65,6 +71,7 @@ export default function AnswerPanel({
       onSubmit={onSubmit}
       onRetry={onRetry}
       onNext={onNext}
+      onOpenApproach={onOpenApproach}
     />
   );
 }
