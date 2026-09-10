@@ -1,6 +1,7 @@
 import { getAllQuestionIds, getChapterTaxonomy } from "@/app/_lib/data-service";
 import { getAllPosts } from "@/app/_data/posts";
 import { getAllCutoffColleges } from "@/app/_lib/cutoffs";
+import { MILLENNIUM_PROBLEMS } from "@/app/_lib/millennium-problems";
 
 const CHAPTER_SUBJECTS = [
   { subject: "Physics", slug: "physics" },
@@ -27,6 +28,11 @@ const STATIC_ROUTES = [
   { route: "/about", changeFrequency: "monthly", priority: 0.4 },
   { route: "/contact", changeFrequency: "monthly", priority: 0.3 },
   { route: "/question-of-the-day", changeFrequency: "daily", priority: 0.8 },
+  {
+    route: "/millennium-prize-problems",
+    changeFrequency: "monthly",
+    priority: 0.8,
+  },
 ];
 
 export default async function sitemap() {
@@ -83,11 +89,19 @@ export default async function sitemap() {
     priority: 0.7,
   }));
 
+  const millenniumEntries = MILLENNIUM_PROBLEMS.map((p) => ({
+    url: `${SITE_URL}/millennium-prize-problems/${p.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: 0.7,
+  }));
+
   return [
     ...staticEntries,
     ...questionEntries,
     ...blogEntries,
     ...chapterEntries,
     ...collegeEntries,
+    ...millenniumEntries,
   ];
 }

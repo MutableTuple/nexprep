@@ -39,6 +39,7 @@ const links = [
   { name: "Colleges", href: "/colleges" },
   { name: "Duel", href: "/duel" },
   { name: "Leaderboard", href: "/leaderboard" },
+  { name: "Millennium Problems", href: "/millennium-prize-problems" },
   { name: "Blog", href: "/blog" },
 ];
 

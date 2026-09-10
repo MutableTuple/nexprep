@@ -52,6 +52,7 @@ const resourceLinks = [
   { name: "Blog", href: "/blog" },
   { name: "Engineering Colleges", href: "/colleges" },
   { name: "College Predictor", href: "/college-predictor" },
+  { name: "Millennium Prize Problems", href: "/millennium-prize-problems" },
 ];
 
 const companyLinks = [
