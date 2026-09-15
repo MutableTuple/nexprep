@@ -8,7 +8,6 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
   SheetContent,
@@ -35,7 +34,8 @@ import { useUser } from "../_lib/AuthProvider";
 // primary slot.)
 const links = [
   { name: "Problems", href: "/problems" },
-  { name: "College Predictor", href: "/college-predictor" },
+  { name: "Predictor", href: "/college-predictor" },
+  { name: "Percentile", href: "/percentile-to-rank" },
   { name: "Colleges", href: "/colleges" },
   { name: "Duel", href: "/duel" },
   { name: "Leaderboard", href: "/leaderboard" },
@@ -135,27 +135,26 @@ export default function Navbar() {
         >
           <NavLogo />
           <span className="text-base tracking-tight">rankgrind.com</span>
-          <Badge
-            variant="secondary"
-            className="text-[10px] px-1.5 py-0 h-4 font-semibold hidden sm:inline-flex"
-          >
-            BETA
-          </Badge>
         </Link>
 
         {/* Desktop nav */}
-        {/* Desktop nav switches on at lg, not md: at 768px the logo (221px)
-            and auth buttons (222px) alone leave too little room, so the row
-            overflowed horizontally. Tablets get the sheet menu instead. */}
-        <NavigationMenu className="hidden lg:flex">
+        {/* Desktop nav switches on at xl, not lg: the header row is capped at
+            max-w-7xl, so it's the container width that matters, not the
+            viewport. Logo+badge (~221px) and auth buttons (~222px) plus 8 nav
+            items don't fit inside that at lg, which shrinks each
+            NavigationMenuItem below its content width and wraps labels
+            mid-word. whitespace-nowrap + shrink-0 are a hard backstop against
+            that regardless of item count. Tablets/small-laptops get the
+            sheet menu instead. */}
+        <NavigationMenu className="hidden xl:flex">
           <NavigationMenuList className="gap-1">
             {links.map((link) => (
-              <NavigationMenuItem key={link.name}>
+              <NavigationMenuItem key={link.name} className="shrink-0">
                 <NavigationMenuLink asChild>
                   <Link
                     href={link.href}
                     className={cn(
-                      "rounded-lg px-3.5 py-2 text-sm font-medium transition-colors",
+                      "rounded-lg px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-colors",
                       pathname === link.href
                         ? "bg-accent text-foreground"
                         : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -170,7 +169,7 @@ export default function Navbar() {
         </NavigationMenu>
 
         {/* Desktop right */}
-        <div className="hidden lg:flex items-center gap-2">
+        <div className="hidden xl:flex items-center gap-2">
           <ThemeToggle />
           <AuthSlot
             loading={loading}
@@ -202,7 +201,7 @@ export default function Navbar() {
         </div>
 
         {/* Mobile right */}
-        <div className="flex items-center gap-1 lg:hidden">
+        <div className="flex items-center gap-1 xl:hidden">
           <ThemeToggle />
           <AuthSlot
             loading={loading}

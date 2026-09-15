@@ -72,17 +72,29 @@ export async function getQuestions({
   page = 1,
   limit = 25,
   userId = null,
+  // "default" is a stable shuffle (see below); "popular" orders by real,
+  // DB-maintained correct-solve counts — no separate aggregation query
+  // needed since questions.correct_attempts is already kept in sync by the
+  // sync_question_attempt_counts trigger.
+  sortBy = "default",
 } = {}) {
+  let query = supabase
+    .from("questions")
+    .select(SELECT_LIST)
+    .eq("status", "published");
+
+  if (sortBy === "popular") {
+    query = query.order("correct_attempts", { ascending: false });
+  }
   // Ordered by id, not created_at — questions get imported in topic-sized
   // batches, so "newest first" clustered dozens of same-topic questions
   // together on page 1, making the catalog feel repetitive. `id` is a
   // random uuid, so sorting by it gives a stable shuffle: mixed subject
   // matter, but still deterministic across page requests (no duplicate or
   // skipped rows the way ORDER BY random() would cause with pagination).
-  let query = supabase
-    .from("questions")
-    .select(SELECT_LIST)
-    .eq("status", "published")
+  // Kept as the tiebreaker under "popular" too, so equally-popular
+  // questions don't jitter between page loads.
+  query = query
     .order("id", { ascending: true })
     .range((page - 1) * limit, page * limit - 1);
 
@@ -1055,28 +1067,45 @@ export async function getQuestionOfTheDay() {
   return getQuestionById(ids[index].id);
 }
 
-// Social proof for the homepage "Today's Challenge" card — who has solved
-// this question, most recent first, plus how many total (so the UI can
-// show a handful of avatars + "N others").
+// Social proof for the homepage "Today's Challenge" card and the Problems
+// list — who has solved this question, most recent first, how many total,
+// and the real average time people actually took (from solved_questions.
+// time_taken — only ever written by the timed solve screen, so the inline
+// no-timer path's null rows are naturally excluded rather than dragging the
+// average toward zero).
 export async function getQuestionSolvers(questionId, limit = 3) {
-  if (!questionId) return { solvers: [], totalCount: 0 };
+  if (!questionId) return { solvers: [], totalCount: 0, avgTimeSeconds: null };
 
-  const [{ count, error: countError }, { data, error }] = await Promise.all([
-    supabase
-      .from("solved_questions")
-      .select("*", { count: "exact", head: true })
-      .eq("question_id", questionId)
-      .not("user_id", "is", null),
-    supabase
-      .from("solved_questions")
-      .select("user_id, solved_at, profiles(username, display_name, avatar_url)")
-      .eq("question_id", questionId)
-      .not("user_id", "is", null)
-      .order("solved_at", { ascending: false })
-      .limit(limit),
-  ]);
+  const [{ count, error: countError }, { data, error }, timeResult] =
+    await Promise.all([
+      supabase
+        .from("solved_questions")
+        .select("*", { count: "exact", head: true })
+        .eq("question_id", questionId)
+        .not("user_id", "is", null),
+      supabase
+        .from("solved_questions")
+        .select("user_id, solved_at, profiles(username, display_name, avatar_url)")
+        .eq("question_id", questionId)
+        .not("user_id", "is", null)
+        .order("solved_at", { ascending: false })
+        .limit(limit),
+      supabase
+        .from("solved_questions")
+        .select("time_taken")
+        .eq("question_id", questionId)
+        .not("time_taken", "is", null),
+    ]);
   if (countError) throw countError;
   if (error) throw error;
+  if (timeResult.error) throw timeResult.error;
+
+  const times = (timeResult.data ?? [])
+    .map((r) => r.time_taken)
+    .filter((t) => typeof t === "number" && t > 0);
+  const avgTimeSeconds = times.length
+    ? Math.round(times.reduce((sum, t) => sum + t, 0) / times.length)
+    : null;
 
   return {
     solvers: (data ?? []).map((row) => ({
@@ -1086,7 +1115,64 @@ export async function getQuestionSolvers(questionId, limit = 3) {
       avatarUrl: row.profiles?.avatar_url || null,
     })),
     totalCount: count ?? 0,
+    avgTimeSeconds,
   };
+}
+
+/**
+ * Same shape as getQuestionSolvers, for many questions in one round trip —
+ * what the Problems list uses instead of firing one query per visible card.
+ * A single query pulling every solved_questions row for the page's question
+ * ids, grouped client-side, is only viable at this userbase's scale (a few
+ * solves per question, not thousands) — revisit with a real per-question
+ * aggregate (an RPC, like predict_colleges) if that stops being true.
+ */
+export async function getSolverStatsForQuestions(questionIds, limit = 3) {
+  const ids = [...new Set(questionIds ?? [])];
+  const empty = { solvers: [], totalCount: 0, avgTimeSeconds: null };
+  if (ids.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from("solved_questions")
+    .select(
+      "question_id, user_id, solved_at, time_taken, profiles(username, display_name, avatar_url)",
+    )
+    .in("question_id", ids)
+    .not("user_id", "is", null)
+    .order("solved_at", { ascending: false });
+  if (error) throw error;
+
+  const byQuestion = new Map();
+  for (const row of data ?? []) {
+    if (!byQuestion.has(row.question_id)) byQuestion.set(row.question_id, []);
+    byQuestion.get(row.question_id).push(row);
+  }
+
+  const result = {};
+  for (const id of ids) {
+    const rows = byQuestion.get(id);
+    if (!rows) {
+      result[id] = empty;
+      continue;
+    }
+    const times = rows
+      .map((r) => r.time_taken)
+      .filter((t) => typeof t === "number" && t > 0);
+    result[id] = {
+      solvers: rows.slice(0, limit).map((row) => ({
+        userId: row.user_id,
+        name:
+          row.profiles?.display_name || row.profiles?.username || "Anonymous",
+        username: row.profiles?.username,
+        avatarUrl: row.profiles?.avatar_url || null,
+      })),
+      totalCount: rows.length,
+      avgTimeSeconds: times.length
+        ? Math.round(times.reduce((sum, t) => sum + t, 0) / times.length)
+        : null,
+    };
+  }
+  return result;
 }
 
 export async function listNotifications(userId, limit = 20) {

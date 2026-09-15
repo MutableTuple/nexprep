@@ -52,6 +52,7 @@ const resourceLinks = [
   { name: "Blog", href: "/blog" },
   { name: "Engineering Colleges", href: "/colleges" },
   { name: "College Predictor", href: "/college-predictor" },
+  { name: "Percentile to Rank", href: "/percentile-to-rank" },
   { name: "Millennium Prize Problems", href: "/millennium-prize-problems" },
 ];
 
@@ -78,6 +79,7 @@ const seoKeywords = [
   { name: "BITSAT Questions", href: "/bitsat" },
   { name: "Engineering Colleges in India", href: "/colleges" },
   { name: "JEE College Predictor", href: "/college-predictor" },
+  { name: "JEE Main Percentile to Rank", href: "/percentile-to-rank" },
 ];
 
 const features = [

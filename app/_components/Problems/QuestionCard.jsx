@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   Clock3,
+  Timer,
   Bookmark,
   CheckCircle2,
   XCircle,
@@ -14,8 +15,10 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useUserId } from "@/app/_lib/AuthProvider";
 import MarkdownRenderer from "../MarkdownRenderer";
+import SolversStack from "../SolversStack";
 
 // Split-layout question card — the whole thing works as one big
 // "your next challenge" hero:
@@ -34,6 +37,13 @@ const DIFFICULTY_DOT = {
   Hard: "bg-red-500",
 };
 
+function formatAvgTime(seconds) {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return s > 0 ? `${m}m ${s}s` : `${m}m`;
+}
+
 export default function QuestionCard({
   id,
   href,
@@ -51,6 +61,10 @@ export default function QuestionCard({
   totalAttempts = 0,
   correctAttempts = 0,
   question,
+  // Fetched once for the whole page (see ProblemScreen), not per card —
+  // solverStats is undefined until that batched call resolves.
+  solverStats,
+  statsLoading = false,
 }) {
   const { userId } = useUserId();
 
@@ -64,8 +78,21 @@ export default function QuestionCard({
   return (
     <Card className="overflow-hidden rounded-3xl border-border p-0 shadow-none transition-all duration-300 hover:shadow-lg">
       <div className="grid grid-cols-1 lg:grid-cols-2">
-        {/* ── Left: hero copy + CTAs ── */}
-        <div className="p-6 lg:p-8 flex flex-col">
+        {/* ── Left: rendered preview ── */}
+        <div className="bg-muted/25 p-6 lg:p-8 flex items-center min-h-[220px] order-1">
+          <div className="text-[15px] leading-7 text-foreground italic max-h-[220px] overflow-hidden [&_p]:!my-0 [&_p]:!leading-7">
+            {question ? (
+              <MarkdownRenderer>{question}</MarkdownRenderer>
+            ) : (
+              <span className="text-muted-foreground not-italic">
+                Preview unavailable — tap Solve to open the question.
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* ── Right: hero copy + CTAs ── */}
+        <div className="border-t lg:border-t-0 lg:border-l border-border p-6 lg:p-8 flex flex-col order-2">
           <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Your next challenge
           </span>
@@ -124,13 +151,24 @@ export default function QuestionCard({
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">{chapter}</p>
 
-          {/* Meta strip — accuracy is more meaningful than raw
-              attempt count. Hidden entirely when nobody's tried yet. */}
+          {/* Meta strip — accuracy and avg time are more meaningful than
+              raw attempt count, and both are hidden until real data exists
+              rather than showing a placeholder. */}
           <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <Clock3 size={14} />
-              {time}
+              Est. {time}
             </span>
+            {statsLoading && !solverStats ? (
+              <Skeleton className="h-4 w-24" />
+            ) : (
+              solverStats?.avgTimeSeconds != null && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Timer size={14} />
+                  Avg {formatAvgTime(solverStats.avgTimeSeconds)}/user
+                </span>
+              )
+            )}
             <span className="inline-flex items-center gap-1.5">
               <Star size={14} className="fill-orange-400 text-orange-400" />
               <span className="font-semibold text-foreground">
@@ -140,10 +178,30 @@ export default function QuestionCard({
             {totalAttempts > 0 && (
               <span className="inline-flex items-center gap-1.5">
                 <BarChart3 size={14} />
-                {Math.round((correctAttempts / totalAttempts) * 100)}% solve rate
+                {Math.round((correctAttempts / totalAttempts) * 100)}% accuracy
               </span>
             )}
           </div>
+
+          {/* Real solvers only — renders nothing once loaded if nobody has */}
+          {statsLoading && !solverStats ? (
+            <div className="mt-4 flex items-center gap-2">
+              <div className="flex -space-x-2">
+                <Skeleton className="h-7 w-7 rounded-full border-2 border-background" />
+                <Skeleton className="h-7 w-7 rounded-full border-2 border-background" />
+              </div>
+              <Skeleton className="h-3.5 w-28" />
+            </div>
+          ) : (
+            solverStats?.solvers?.length > 0 && (
+              <div className="mt-4">
+                <SolversStack
+                  solvers={solverStats.solvers}
+                  totalCount={solverStats.totalCount}
+                />
+              </div>
+            )
+          )}
 
           {/* CTA */}
           <div className="mt-6">
@@ -159,18 +217,6 @@ export default function QuestionCard({
           </div>
         </div>
 
-        {/* ── Right: rendered preview ── */}
-        <div className="border-t lg:border-t-0 lg:border-l border-border bg-muted/25 p-6 lg:p-8 flex items-center min-h-[220px]">
-          <div className="text-[15px] leading-7 text-foreground italic max-h-[220px] overflow-hidden [&_p]:!my-0 [&_p]:!leading-7">
-            {question ? (
-              <MarkdownRenderer>{question}</MarkdownRenderer>
-            ) : (
-              <span className="text-muted-foreground not-italic">
-                Preview unavailable — tap Solve to open the question.
-              </span>
-            )}
-          </div>
-        </div>
       </div>
     </Card>
   );

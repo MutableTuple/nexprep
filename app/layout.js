@@ -13,7 +13,9 @@ const spaceGrotesk = Space_Grotesk({
 });
 import { AuthProvider } from "./_lib/AuthProvider";
 import { createClient } from "./_lib/supabase-server";
+import { getQuestionOfTheDay } from "./_lib/data-service";
 import Navbar from "./_components/Navbar";
+import ExitIntentChallenge from "./_components/ExitIntentChallenge";
 
 const SITE_URL = "https://rankgrind.com";
 const SITE_NAME = "rankgrind.com";
@@ -143,6 +145,15 @@ export default async function RootLayout({ children }) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Decorative: the exit popup just skips itself if this fails, same as
+  // every other "nice to have, not worth blocking the page for" fetch here.
+  let exitChallengeQuestion = null;
+  try {
+    exitChallengeQuestion = await getQuestionOfTheDay();
+  } catch {
+    // no-op
+  }
+
   return (
     <html
       lang="en"
@@ -166,6 +177,7 @@ export default async function RootLayout({ children }) {
           <Providers>
             <Navbar />
             {children} <MainToast />
+            <ExitIntentChallenge question={exitChallengeQuestion} />
           </Providers>
         </AuthProvider>
         <Footer />

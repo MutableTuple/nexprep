@@ -22,7 +22,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import {
@@ -340,12 +339,6 @@ export default function SignupPage() {
               <Brain size={20} />
             </div>
             <span className="text-xl tracking-tight">Rank Grind</span>
-            <Badge
-              variant="secondary"
-              className="text-[10px] px-1.5 py-0 h-4 font-semibold"
-            >
-              BETA
-            </Badge>
           </Link>
           {!sentTo && (
             <div>

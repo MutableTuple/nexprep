@@ -25,6 +25,7 @@ const STATIC_ROUTES = [
   { route: "/blog", changeFrequency: "weekly", priority: 0.7 },
   { route: "/colleges", changeFrequency: "monthly", priority: 0.7 },
   { route: "/college-predictor", changeFrequency: "monthly", priority: 0.8 },
+  { route: "/percentile-to-rank", changeFrequency: "monthly", priority: 0.8 },
   { route: "/about", changeFrequency: "monthly", priority: 0.4 },
   { route: "/contact", changeFrequency: "monthly", priority: 0.3 },
   { route: "/question-of-the-day", changeFrequency: "daily", priority: 0.8 },

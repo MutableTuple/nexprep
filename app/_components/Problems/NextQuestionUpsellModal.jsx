@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "../Spinner";
 import MarkdownRenderer from "../MarkdownRenderer";
 import { getSimilarQuestions } from "@/app/_lib/data-service";
+import { getRecentlySeenSet } from "@/app/_lib/recently-seen";
 
 // Post-solve upsell — centered Dialog with backdrop, opens after a
 // fresh submit. Headline + subhead adapt to right/wrong. The next
@@ -75,8 +76,18 @@ export default function NextQuestionUpsellModal({
     getSimilarQuestions({ subject, chapter, topic, currentQuestionId })
       .then((rows) => {
         if (cancelled) return;
-        const fresh = (rows ?? []).find((q) => q.id !== currentQuestionId);
-        if (fresh) setNextQ(fresh);
+        const list = rows ?? [];
+        const seen = getRecentlySeenSet();
+        // First pass — prefer something the user hasn't just seen.
+        // Second pass — if every candidate is in the recent buffer
+        // (small topic, or user is exhausting it), fall back to any
+        // non-current match rather than showing "no similar found".
+        const notSeen = list.find(
+          (q) => q.id !== currentQuestionId && !seen.has(q.id),
+        );
+        const anyFresh = list.find((q) => q.id !== currentQuestionId);
+        const pick = notSeen ?? anyFresh;
+        if (pick) setNextQ(pick);
         else setError(true);
       })
       .catch((err) => {

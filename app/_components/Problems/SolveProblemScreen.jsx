@@ -26,6 +26,7 @@ import SimilarQuestions from "../SimilarQuestions";
 import NextQuestionUpsellModal from "./NextQuestionUpsellModal";
 import ApproachModal from "./ApproachModal";
 import YouTubeEmbed from "./YouTubeEmbed";
+import { pushRecentlySeen } from "@/app/_lib/recently-seen";
 import { Lightbulb } from "lucide-react";
 import { useUser } from "@/app/_lib/AuthProvider";
 import { showToast } from "@/app/_lib/toast";
@@ -120,6 +121,11 @@ export default function SolveProblemScreen({ questionId }) {
   const loadQuestion = useCallback(async (id) => {
     try {
       const q = await getQuestionById(id);
+      // Log the view so the upsell modal can exclude what we've just
+      // seen — otherwise `getSimilarQuestions` returns the same top-N
+      // ordering every time and we ping-pong between two questions of
+      // the same topic forever.
+      pushRecentlySeen(id);
       // Reset everything in the SAME batch as setQuestion — if this reset
       // lived in a separate effect keyed on question?.id, there'd be one
       // render where the new question's content is up but submitted/selected

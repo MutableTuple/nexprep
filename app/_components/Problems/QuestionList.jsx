@@ -1,7 +1,12 @@
 import React from "react";
 import QuestionCard from "./QuestionCard";
 
-export default function QuestionList({ questions, defaultExpanded = false }) {
+export default function QuestionList({
+  questions,
+  defaultExpanded = false,
+  statsById = {},
+  statsLoading = false,
+}) {
   return (
     <div className="space-y-8">
       <p className="text-xs text-muted-foreground">
@@ -17,6 +22,8 @@ export default function QuestionList({ questions, defaultExpanded = false }) {
             key={`${question.id}:${defaultExpanded}`}
             {...question}
             defaultExpanded={defaultExpanded}
+            solverStats={statsById[question.id]}
+            statsLoading={statsLoading}
           />
         ))}
       </div>

@@ -6,13 +6,18 @@ import { ChevronLeft, ChevronRight, NotebookPen } from "lucide-react";
 import { Spinner } from "../Spinner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { getQuestions, getUserPreferences } from "@/app/_lib/data-service";
+import {
+  getQuestions,
+  getUserPreferences,
+  getSolverStatsForQuestions,
+} from "@/app/_lib/data-service";
 import { useUserId } from "@/app/_lib/AuthProvider";
 import { trackEvent } from "@/app/_lib/analytics";
 import HeroSection from "./HeroSection";
 import SearchBar from "./SearchBar";
 import DifficultyFilter from "./DifficultyFilter";
 import StatusFilter from "./StatusFilter";
+import SortControl from "./SortControl";
 import SubjectPills from "./SubjectPills";
 import ActiveFilters from "./ActiveFilters";
 import EmptyState from "./EmptyState";
@@ -51,6 +56,7 @@ export default function ProblemScreen() {
   const [activeSubject, setActiveSubject] = useState("All");
   const [activeDiffs, setActiveDiffs] = useState([]);
   const [statusFilter, setStatusFilter] = useState(null); // null | "unsolved" | "incorrect" | "solved"
+  const [sortBy, setSortBy] = useState("default"); // "default" | "popular"
   const [page, setPage] = useState(1);
   const [showInline, setShowInline] = useState(false); // question cards default expanded vs click-through
 
@@ -65,6 +71,11 @@ export default function ProblemScreen() {
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Solver/accuracy stats for the current page, fetched in one batched call
+  // rather than one query per card — see getSolverStatsForQuestions.
+  const [statsById, setStatsById] = useState({});
+  const [statsLoading, setStatsLoading] = useState(false);
+  const statsAbortRef = useRef(null);
 
   const debouncedQuery = useDebounce(query, 400);
   const abortRef = useRef(null);
@@ -87,7 +98,7 @@ export default function ProblemScreen() {
   }, [authLoading, userId]);
 
   const fetchQuestions = useCallback(
-    async (subject, difficulties, search, pageNum, forUserId) => {
+    async (subject, difficulties, search, pageNum, forUserId, sort) => {
       if (abortRef.current) abortRef.current = false;
       const token = {};
       abortRef.current = token;
@@ -103,6 +114,7 @@ export default function ProblemScreen() {
           page: pageNum,
           limit: PAGE_SIZE,
           userId: forUserId,
+          sortBy: sort,
         });
         if (token !== abortRef.current) return;
         setQuestions(data);
@@ -117,19 +129,50 @@ export default function ProblemScreen() {
     [],
   );
 
-  // Re-fetch whenever filters, debounced search, page, or auth state change
+  // Re-fetch whenever filters, debounced search, page, sort, or auth state change
   useEffect(() => {
     if (authLoading) return;
-    fetchQuestions(activeSubject, activeDiffs, debouncedQuery, page, userId);
+    fetchQuestions(
+      activeSubject,
+      activeDiffs,
+      debouncedQuery,
+      page,
+      userId,
+      sortBy,
+    );
   }, [
     activeSubject,
     activeDiffs,
     debouncedQuery,
     page,
     userId,
+    sortBy,
     authLoading,
     fetchQuestions,
   ]);
+
+  // Batched stats fetch — fires once per page of questions, independent of
+  // the question fetch itself, so card text/CTAs render immediately and the
+  // stats row fills in a beat later rather than blocking the whole list.
+  useEffect(() => {
+    if (questions.length === 0) {
+      setStatsById({});
+      return;
+    }
+    const token = {};
+    statsAbortRef.current = token;
+    setStatsLoading(true);
+
+    getSolverStatsForQuestions(questions.map((q) => q.id))
+      .then((stats) => {
+        if (statsAbortRef.current !== token) return;
+        setStatsById(stats);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (statsAbortRef.current === token) setStatsLoading(false);
+      });
+  }, [questions]);
 
   function handleQueryChange(value) {
     setQuery(value);
@@ -158,6 +201,11 @@ export default function ProblemScreen() {
     setActiveSubject("All");
     setActiveDiffs([]);
     setStatusFilter(null);
+    setPage(1);
+  }
+
+  function handleSortChange(next) {
+    setSortBy(next);
     setPage(1);
   }
 
@@ -228,7 +276,10 @@ export default function ProblemScreen() {
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <StatusFilter active={statusFilter} onChange={setStatusFilter} />
+          <div className="flex flex-wrap items-center gap-3">
+            <StatusFilter active={statusFilter} onChange={setStatusFilter} />
+            <SortControl value={sortBy} onChange={handleSortChange} />
+          </div>
           {userId && (
             <Link
               href="/error-notebook"
@@ -291,7 +342,12 @@ export default function ProblemScreen() {
         ) : displayQuestions.length === 0 ? (
           <EmptyState onClear={clearAll} />
         ) : (
-          <QuestionList questions={displayQuestions} defaultExpanded={showInline} />
+          <QuestionList
+            questions={displayQuestions}
+            defaultExpanded={showInline}
+            statsById={statsById}
+            statsLoading={statsLoading}
+          />
         )}
 
         {!error && !loading && questions.length > 0 && (

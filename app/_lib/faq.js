@@ -177,6 +177,28 @@ export function buildPredictorFaqs({ minYear, maxYear }) {
   ];
 }
 
+export function buildPercentileFaqs({ years }) {
+  const latest = years[0];
+  return [
+    {
+      q: "How do you estimate rank from percentile?",
+      a: "NTA defines your percentile as the share of that year's candidates who scored at or below you. We invert that against the total number of unique candidates who appeared that year (a figure NTA publishes on result day) to estimate roughly where that percentile falls in the Common Rank List. It is an estimate of position, not the official rank.",
+    },
+    {
+      q: "Why isn't this a marks-to-percentile calculator?",
+      a: "Because NTA has never published the raw score distribution behind a percentile — every 'marks vs percentile' table online is a third-party estimate, not an official figure. We only convert between percentile and rank, both of which follow from numbers NTA actually discloses.",
+    },
+    {
+      q: "Why might the estimated rank differ from my actual JEE Main rank?",
+      a: "The official Common Rank List also accounts for tie-breaking rules and the exact merge of your two session percentiles, neither of which NTA publishes in enough detail to reproduce exactly. This estimate uses only the total candidate count, so treat it as an approximation, not your final rank.",
+    },
+    {
+      q: `Which years does this cover?`,
+      a: `${latest ? `${years[years.length - 1]}–${latest}` : "Recent years"}, using each year's official total of unique candidates who appeared across both JEE Main sessions.`,
+    },
+  ];
+}
+
 /** FAQPage JSON-LD. Returns null when there is nothing to say. */
 export function faqJsonLd(faqs) {
   if (!faqs?.length) return null;
