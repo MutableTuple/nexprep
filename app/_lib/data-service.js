@@ -36,7 +36,10 @@ function mapQuestion(q) {
     correctOptionIds:
       q.data?.correctOptionIds ??
       (q.data?.correctOptionId ? [q.data.correctOptionId] : []),
-    correctValue: q.data?.correctValue ?? null,
+    // Numerical answer canonically stored as `data.answer` (see the
+    // stored JSON on questions rows). Older rows may still carry
+    // `data.correctValue` — accept either so both formats grade correctly.
+    correctValue: q.data?.answer ?? q.data?.correctValue ?? null,
     tolerance: q.data?.tolerance ?? 0,
     unit: q.data?.unit ?? "",
 

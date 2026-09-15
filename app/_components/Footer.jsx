@@ -53,6 +53,7 @@ const resourceLinks = [
   { name: "Engineering Colleges", href: "/colleges" },
   { name: "College Predictor", href: "/college-predictor" },
   { name: "Percentile to Rank", href: "/percentile-to-rank" },
+  { name: "Physics Simulators", href: "/simulators" },
   { name: "Millennium Prize Problems", href: "/millennium-prize-problems" },
 ];
 

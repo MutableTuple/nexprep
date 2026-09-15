@@ -2,6 +2,7 @@ import { getAllQuestionIds, getChapterTaxonomy } from "@/app/_lib/data-service";
 import { getAllPosts } from "@/app/_data/posts";
 import { getAllCutoffColleges } from "@/app/_lib/cutoffs";
 import { MILLENNIUM_PROBLEMS } from "@/app/_lib/millennium-problems";
+import { SIMULATORS } from "@/app/_lib/simulators";
 
 const CHAPTER_SUBJECTS = [
   { subject: "Physics", slug: "physics" },
@@ -34,6 +35,7 @@ const STATIC_ROUTES = [
     changeFrequency: "monthly",
     priority: 0.8,
   },
+  { route: "/simulators", changeFrequency: "monthly", priority: 0.85 },
 ];
 
 export default async function sitemap() {
@@ -97,6 +99,13 @@ export default async function sitemap() {
     priority: 0.7,
   }));
 
+  const simulatorEntries = SIMULATORS.map((s) => ({
+    url: `${SITE_URL}/simulators/${s.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: 0.8,
+  }));
+
   return [
     ...staticEntries,
     ...questionEntries,
@@ -104,5 +113,6 @@ export default async function sitemap() {
     ...chapterEntries,
     ...collegeEntries,
     ...millenniumEntries,
+    ...simulatorEntries,
   ];
 }
