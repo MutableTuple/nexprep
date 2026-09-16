@@ -18,6 +18,8 @@ import {
   XCircle,
   MailCheck,
   Loader2,
+  MessageCircle,
+  Phone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -204,6 +206,11 @@ export default function SignupPage() {
   const [examTarget, setExamTarget] = useState("");
   const [examYear, setExamYear] = useState("");
   const [email, setEmail] = useState("");
+  // WhatsApp field — India default (+91). Users type just the 10 digits;
+  // we prepend +91 on save. Also gates the daily-questions opt-in, which
+  // defaults to true because that's the value prop for collecting it.
+  const [phone, setPhone] = useState("");
+  const [whatsappOptIn, setWhatsappOptIn] = useState(true);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -250,10 +257,22 @@ export default function SignupPage() {
 
   const allRulesPassed = RULES.every((r) => r.test(password));
 
+  // Normalize any input to just the 10 digits after country code.
+  // Accepts "9812345678", "+91 98123-45678", "091-9812345678", etc.
+  const phoneDigits = phone.replace(/\D/g, "").replace(/^91/, "").slice(-10);
+  const phoneValid = /^[6-9]\d{9}$/.test(phoneDigits);
+
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !phone) {
       showToast.error("Missing fields", "Please fill in all fields.");
+      return;
+    }
+    if (!phoneValid) {
+      showToast.error(
+        "Invalid WhatsApp number",
+        "Enter a valid 10-digit Indian mobile number.",
+      );
       return;
     }
     if (!allRulesPassed) {
@@ -292,6 +311,11 @@ export default function SignupPage() {
           college: college.trim() || null,
           exam: examTarget || null,
           target_year: examYear ? parseInt(examYear, 10) : null,
+          // Store as E.164 so the WhatsApp sender doesn't have to guess
+          // the country. Opt-in is separate from having a number so the
+          // user can toggle it later without re-verifying.
+          whatsapp_number: `+91${phoneDigits}`,
+          whatsapp_daily_opt_in: whatsappOptIn,
         });
       } catch (err) {
         // don't block account creation over this — they can fill it in
@@ -540,6 +564,55 @@ export default function SignupPage() {
                         autoComplete="email"
                       />
                     </div>
+                  </div>
+
+                  {/* WhatsApp — required. Marketed on the field itself as
+                      the daily-question channel; opt-in defaults ON and the
+                      user can uncheck it if they only want it for account
+                      recovery / duel notifications. */}
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="phone" className="text-sm font-medium flex items-center gap-1.5">
+                      <MessageCircle size={14} className="text-emerald-500" />
+                      WhatsApp number
+                      <span className="text-[10px] font-normal text-emerald-600 dark:text-emerald-400 ml-1">
+                        Get 1 free JEE question daily
+                      </span>
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-sm text-muted-foreground pointer-events-none">
+                        <Phone size={14} />
+                        +91
+                      </span>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        inputMode="numeric"
+                        placeholder="98123 45678"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="pl-16 h-11 rounded-xl bg-background"
+                        autoComplete="tel-national"
+                        maxLength={15}
+                        aria-invalid={phone && !phoneValid}
+                      />
+                    </div>
+                    {phone && !phoneValid && (
+                      <p className="text-[11px] text-red-500 pl-1">
+                        Enter a valid 10-digit Indian mobile number
+                      </p>
+                    )}
+                    <label className="flex items-start gap-2 mt-1 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={whatsappOptIn}
+                        onChange={(e) => setWhatsappOptIn(e.target.checked)}
+                        className="mt-0.5 rounded accent-emerald-500"
+                      />
+                      <span className="text-[11px] text-muted-foreground leading-snug">
+                        Send me <b className="text-foreground">1 curated JEE question every morning</b> on WhatsApp,
+                        plus my streak reminders. No spam — unsubscribe anytime.
+                      </span>
+                    </label>
                   </div>
 
                   {/* Password */}

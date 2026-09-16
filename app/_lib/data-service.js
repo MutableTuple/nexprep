@@ -1,7 +1,7 @@
 import { supabase } from "./supabase";
 
 const SELECT_LIST =
-  "id, slug, subject, chapter, topic, difficulty, marks, negative_marks, estimated_time_seconds, question_text, question_type, hints, tags, exam, data, explanation, attempts, correct_attempts";
+  "id, slug, subject, chapter, topic, difficulty, marks, negative_marks, estimated_time_seconds, question_text, question_type, hints, tags, exam, data, explanation, attempts, correct_attempts, simulator_spec";
 
 const SELECT_FULL = "*";
 
@@ -40,6 +40,12 @@ function mapQuestion(q) {
     // stored JSON on questions rows). Older rows may still carry
     // `data.correctValue` — accept either so both formats grade correctly.
     correctValue: q.data?.answer ?? q.data?.correctValue ?? null,
+
+    // Cached LLM classification into an interactive simulator (see
+    // scripts/backfill-simulator-specs.mjs). null means "no simulator
+    // fits this question". The solve page checks the rule matcher first
+    // and only falls back to this cached spec.
+    simulatorSpec: q.simulator_spec ?? null,
     tolerance: q.data?.tolerance ?? 0,
     unit: q.data?.unit ?? "",
 

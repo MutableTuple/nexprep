@@ -6,6 +6,8 @@ import MarkdownRenderer from "../../_components/MarkdownRenderer";
 import ProjectileMotionSim from "../../_components/Simulators/ProjectileMotionSim";
 import CoulombsLawSim from "../../_components/Simulators/CoulombsLawSim";
 import RayOpticsSim from "../../_components/Simulators/RayOpticsSim";
+import WedgeSim from "../../_components/Simulators/WedgeSim";
+import PulleySim from "../../_components/Simulators/PulleySim";
 
 const BASE_URL = "https://rankgrind.com";
 
@@ -15,6 +17,8 @@ const COMPONENTS = {
   projectile: ProjectileMotionSim,
   coulomb: CoulombsLawSim,
   rayoptics: RayOpticsSim,
+  wedge: WedgeSim,
+  pulley: PulleySim,
 };
 
 export function generateStaticParams() {

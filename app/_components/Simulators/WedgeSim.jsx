@@ -161,17 +161,26 @@ export default function WedgeSim() {
       ctx.textBaseline = "middle";
       ctx.fillText(`θ = ${angleDeg}°`, foot.x - 60, foot.y - 8);
 
-      // Block position along incline (0 = at apex, maxSliding = at foot)
+      // Block position along incline (0 = at apex, maxSliding = at foot).
+      // Offset outward along the normal by half the block size so the
+      // block's BASE sits on the incline surface (center is at +size/2
+      // from the surface).
+      const blockSize = 34;
       let displaceM = sAt(elapsed);
       let displacePx = Math.min(displaceM * pxPerM, maxSliding);
-      const blockCX = apex.x + upIncX * -displacePx + outNormX * 22;
-      const blockCY = apex.y + upIncY * -displacePx + outNormY * 22;
+      const blockCX =
+        apex.x + upIncX * -displacePx + outNormX * (blockSize / 2);
+      const blockCY =
+        apex.y + upIncY * -displacePx + outNormY * (blockSize / 2);
 
-      // Rotate square block so its base sits on the incline
-      const blockSize = 34;
+      // Rotate square block so its base sits flat on the incline.
+      // The incline surface points from apex → foot; its angle in the
+      // canvas frame (y-down) is atan2(rise2, run2) = atan2(-upIncY, -upIncX).
+      // Rotating by that angle tilts the block by exactly θ — no extra
+      // ±π/2 term needed.
       ctx.save();
       ctx.translate(blockCX, blockCY);
-      ctx.rotate(Math.atan2(-upIncY, upIncX) - Math.PI / 2);
+      ctx.rotate(Math.atan2(-upIncY, -upIncX));
       ctx.fillStyle = "hsl(20, 91%, 48%)";
       ctx.strokeStyle = "hsla(20, 91%, 30%, 0.5)";
       ctx.lineWidth = 1;
@@ -337,28 +346,8 @@ export default function WedgeSim() {
           aria-label="Block on inclined plane"
         />
 
-        {/* Live readouts */}
-        <div className="absolute top-3 left-3 rounded-xl bg-background/90 backdrop-blur px-3 py-2 text-[11px] font-mono leading-relaxed shadow-sm space-y-0.5">
-          <Row label="θ" value={`${angleDeg}°`} />
-          <Row label="m" value={`${mass.toFixed(2)} kg`} />
-          <Row label="mg" value={`${weight.toFixed(2)} N`} />
-          <Row label="N" value={`${N.toFixed(2)} N`} />
-          <Row label="mg sinθ" value={`${gravAlong.toFixed(2)} N`} />
-          <div className="border-t border-border my-1" />
-          <Row label="μ_s / μ_k" value={`${muS.toFixed(2)} / ${muK.toFixed(2)}`} />
-          <Row
-            label="Friction f"
-            value={`${(willSlide ? kineticFriction : staticFriction).toFixed(2)} N`}
-          />
-          <Row
-            label="Accel a"
-            value={willSlide ? `${accel.toFixed(2)} m/s²` : "0 (static)"}
-          />
-          <div className="mt-1 text-muted-foreground text-[10.5px] normal-case">
-            {willSlide ? "Sliding — tanθ > μ_s" : "Static — tanθ ≤ μ_s"}
-          </div>
-        </div>
-
+        {/* FBD legend — kept as a floating chip because it's small
+            enough not to hide the incline. */}
         {showFBD && (
           <div className="absolute top-3 right-3 rounded-xl bg-background/90 backdrop-blur px-3 py-2 text-[11px] leading-relaxed shadow-sm space-y-1">
             <Legend color="hsl(0, 74%, 51%)" label="mg (weight)" />
@@ -397,6 +386,36 @@ export default function WedgeSim() {
         </div>
       </div>
 
+      {/* Live physics strip — below the canvas so nothing hides the incline.
+          Each chip is a labelled scalar the FBD refers to; the last cell
+          calls out whether the block is sliding or held by static friction. */}
+      <div className="rounded-2xl border border-border bg-background p-4 grid grid-cols-3 sm:grid-cols-5 gap-3 text-[11px] font-mono">
+        <Chip label="θ" value={`${angleDeg}°`} />
+        <Chip label="m" value={`${mass.toFixed(2)} kg`} />
+        <Chip label="mg" value={`${weight.toFixed(2)} N`} />
+        <Chip label="N = mg cosθ" value={`${N.toFixed(2)} N`} />
+        <Chip label="mg sinθ" value={`${gravAlong.toFixed(2)} N`} />
+        <Chip label="μ_s / μ_k" value={`${muS.toFixed(2)} / ${muK.toFixed(2)}`} />
+        <Chip
+          label="Friction f"
+          value={`${(willSlide ? kineticFriction : staticFriction).toFixed(2)} N`}
+        />
+        <Chip
+          label="Accel a"
+          value={willSlide ? `${accel.toFixed(2)} m/s²` : "0"}
+        />
+        <div
+          className={
+            "col-span-3 sm:col-span-2 rounded-lg px-3 py-2 text-[11px] font-semibold flex items-center justify-center text-center " +
+            (willSlide
+              ? "bg-[hsl(20,91%,48%)]/10 text-[hsl(20,91%,40%)]"
+              : "bg-muted text-muted-foreground")
+          }
+        >
+          {willSlide ? "Sliding — tanθ > μ_s" : "Static — tanθ ≤ μ_s"}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-2xl border border-border bg-background p-5">
         <Slider label="Incline angle" value={angleDeg} unit="°" min={5} max={80} step={1} onChange={setAngleDeg} />
         <Slider label="Mass" value={mass} unit="kg" min={0.5} max={20} step={0.5} onChange={setMass} />
@@ -422,11 +441,13 @@ export default function WedgeSim() {
   );
 }
 
-function Row({ label, value }) {
+function Chip({ label, value }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-muted-foreground">{label}</span>
-      <b>{value}</b>
+    <div className="rounded-lg bg-muted/50 px-3 py-2 flex flex-col gap-0.5 min-w-0">
+      <span className="text-[9.5px] uppercase tracking-widest text-muted-foreground truncate">
+        {label}
+      </span>
+      <b className="text-foreground truncate">{value}</b>
     </div>
   );
 }

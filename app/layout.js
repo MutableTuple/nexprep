@@ -182,7 +182,7 @@ export default async function RootLayout({ children }) {
         </AuthProvider>
         <Footer />
       </body>
-      {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
+      {/* {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />} */}
     </html>
   );
 }

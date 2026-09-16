@@ -25,6 +25,11 @@ import ErrorScreen from "./ErrorScreen";
 import SimilarQuestions from "../SimilarQuestions";
 import NextQuestionUpsellModal from "./NextQuestionUpsellModal";
 import ApproachModal from "./ApproachModal";
+// Visualize feature disabled — kept in tree for future revival. Re-enable
+// by uncommenting these imports and the three blocks marked "VISUALIZE"
+// below. Also needs: npm i three @react-three/fiber @react-three/drei.
+// import VisualizeModal from "./VisualizeModal";
+// import { matchSimulator } from "@/app/_lib/question-simulator-matcher";
 import YouTubeEmbed from "./YouTubeEmbed";
 import { pushRecentlySeen } from "@/app/_lib/recently-seen";
 import { Lightbulb } from "lucide-react";
@@ -79,6 +84,21 @@ export default function SolveProblemScreen({ questionId }) {
   // Approach modal — separately controllable from ExplanationModal so
   // students can consult the reasoning framework BEFORE submitting.
   const [approachOpen, setApproachOpen] = useState(false);
+  // VISUALIZE — feature disabled. Uncomment this block (and the imports
+  // + the two JSX blocks below) to bring it back.
+  // const [visualizeOpen, setVisualizeOpen] = useState(false);
+  // const simSpec = question
+  //   ? matchSimulator({
+  //       topic: question.topic ?? question.title,
+  //       chapter: question.chapter,
+  //       subject: question.subject,
+  //       tags: question.tags,
+  //       question_text: question.question ?? question.question_text,
+  //       title: question.title,
+  //     }) ??
+  //     (question.simulatorSpec?.kind ? question.simulatorSpec : null)
+  //   : null;
+  const simSpec = null;
 
   useEffect(() => {
     if (!upsellPending) return;
@@ -482,6 +502,19 @@ export default function SolveProblemScreen({ questionId }) {
                 body={question.question}
                 images={question.images}
               />
+              {/* VISUALIZE — button disabled. Uncomment to bring back. */}
+              {/*
+              {simSpec && (
+                <button
+                  type="button"
+                  onClick={() => setVisualizeOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-semibold text-xs px-4 py-2 shadow-sm w-fit"
+                >
+                  <Sparkles size={14} />
+                  Visualize this problem
+                </button>
+              )}
+              */}
               <TagList tags={question.tags} />
               <HintsSection
                 hints={question.hints}
@@ -592,6 +625,28 @@ export default function SolveProblemScreen({ questionId }) {
         questionId={question.id}
         officialApproach={question.approach}
       />
+
+      {/* VISUALIZE — modal + mobile FAB disabled. Uncomment to bring back. */}
+      {/*
+      {simSpec && (
+        <VisualizeModal
+          open={visualizeOpen}
+          onOpenChange={setVisualizeOpen}
+          spec={simSpec}
+          title={question.title}
+        />
+      )}
+      {simSpec && (
+        <button
+          type="button"
+          onClick={() => setVisualizeOpen(true)}
+          aria-label="Visualize this problem"
+          className="lg:hidden fixed bottom-44 right-5 z-40 h-14 w-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-[0_8px_24px_rgba(234,88,12,0.45)] flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <Sparkles size={22} />
+        </button>
+      )}
+      */}
 
       {/* Mobile-only floating orange FAB — sits above the mobile
           answer button in the sticky footer. Desktop gets the inline
