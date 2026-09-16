@@ -16,6 +16,7 @@ import { createClient } from "./_lib/supabase-server";
 import { getQuestionOfTheDay } from "./_lib/data-service";
 import Navbar from "./_components/Navbar";
 import ExitIntentChallenge from "./_components/ExitIntentChallenge";
+import WhatsAppGate from "./_components/WhatsAppGate";
 
 const SITE_URL = "https://rankgrind.com";
 const SITE_NAME = "rankgrind.com";
@@ -178,6 +179,9 @@ export default async function RootLayout({ children }) {
             <Navbar />
             {children} <MainToast />
             <ExitIntentChallenge question={exitChallengeQuestion} />
+            {/* Catches Google-OAuth users who skipped the signup form; blocks
+                the app with a modal until they provide a WhatsApp number. */}
+            <WhatsAppGate />
           </Providers>
         </AuthProvider>
         <Footer />
